@@ -34,8 +34,7 @@ function validateField(
       if (v.length > 40) return "Category must be 40 characters or fewer.";
       return undefined;
     case "price":
-      if (!/^\d+(\.\d+)?$/.test(v)) return "Price must be a positive number, e.g. 25 or 12.5.";
-      if (Number(v) <= 0) return "Price must be greater than zero.";
+      if (!/^\d+(\.\d+)?$/.test(v)) return "Price must be a number, e.g. 25, 12.5, or 0 for free.";
       if (Number(v) > 100) return "Price must be 100 GEN or less.";
       return undefined;
     case "contentUrl":
@@ -225,7 +224,7 @@ export default function ListSkill() {
             )}
           </label>
           <label htmlFor="price">
-            Price (GEN, up to 100)
+            Price (GEN, 0 for free)
             <input
               id="price"
               value={price}
@@ -234,7 +233,7 @@ export default function ListSkill() {
               required
               inputMode="decimal"
               max={100}
-              placeholder="e.g. 50 (max 100)"
+              placeholder="e.g. 25, or 0 for free (max 100)"
               aria-invalid={errors.price ? true : undefined}
               aria-describedby={errors.price ? "price-error" : undefined}
             />
@@ -293,7 +292,7 @@ export default function ListSkill() {
           <p className="muted" style={{ fontSize: "0.85rem" }}>
             Your content URL must be a public <code>https://</code> address.
             Local, private, or metadata hosts are rejected for security.
-            Prices are capped at 100 GEN.
+            Prices range from 0 (free) to 100 GEN.
           </p>
         </aside>
       </div>

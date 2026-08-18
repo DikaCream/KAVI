@@ -376,8 +376,7 @@ class AIMarketplace(gl.Contract):
             raise gl.vm.UserError("description must be 50-4000 characters")
         if not (3 <= len(category) <= 40):
             raise gl.vm.UserError("category must be 3-40 characters")
-        if int(price) <= 0:
-            raise gl.vm.UserError("price must be positive")
+        # Price is a u256 so it cannot go negative; 0 means a free listing.
         if int(price) > MAX_PRICE_GEN * GEN_ONE:
             raise gl.vm.UserError("price must be 100 GEN or less")
         # The URL validators will fetch at moderation time — nothing that

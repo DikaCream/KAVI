@@ -139,11 +139,14 @@ def test_submit_validates_category(direct_vm, direct_deploy, direct_alice):
         contract.submit_skill("Valid", GOOD_DESCRIPTION, "x", 100, GOOD_URL)
 
 
-def test_submit_validates_price(direct_vm, direct_deploy, direct_alice):
+def test_submit_accepts_free_price(direct_vm, direct_deploy, direct_alice):
     contract = direct_deploy("contracts/ai_marketplace.py")
     direct_vm.sender = direct_alice
-    with direct_vm.expect_revert("price must be positive"):
+    # 0 GEN is a valid free listing.
+    sid = int(
         contract.submit_skill("Valid", GOOD_DESCRIPTION, "automation", 0, GOOD_URL)
+    )
+    assert contract.get_skill(sid)["price"] == 0
 
 
 def test_submit_validates_price_max(direct_vm, direct_deploy, direct_alice):
