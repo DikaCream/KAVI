@@ -1,7 +1,10 @@
 /**
  * Types mirroring the AIMarketplace contract state.
- * Ints arrive as number, bigint or string depending on the node; every helper
- * normalizes them to number.
+ *
+ * Monetary values (price, revenue, escrow) are stored on-chain in wei and
+ * returned by the node as number, bigint or string depending on magnitude;
+ * every helper normalizes them to bigint. Small ints (ids, counts, scores)
+ * are normalized to number.
  */
 
 export type SkillStatus = "PENDING_REVIEW" | "ACTIVE" | "REJECTED";
@@ -15,7 +18,7 @@ export interface Skill {
   title: string;
   description: string;
   category: string;
-  price: number;
+  price: bigint; // wei
   content_url: string;
   status: SkillStatus;
   score: number;
@@ -24,7 +27,7 @@ export interface Skill {
   last_moderated_at: number;
   created_at: number;
   purchases: number;
-  revenue: number;
+  revenue: bigint; // wei
   disputes: number;
   refunds: number;
 }
@@ -33,7 +36,7 @@ export interface Purchase {
   id: number;
   skill_id: number;
   buyer: string;
-  price: number;
+  price: bigint; // wei
   status: PurchaseStatus;
   dispute_id: number;
   purchased_at: number;
@@ -59,7 +62,7 @@ export interface Config {
   skill_count: number;
   purchase_count: number;
   dispute_count: number;
-  escrow_locked: number;
+  escrow_locked: bigint; // wei
   escrow_window_seconds: number;
   dispute_stale_seconds: number;
 }
@@ -69,4 +72,11 @@ export function toInt(v: unknown): number {
   if (typeof v === "bigint") return Number(v);
   if (typeof v === "string") return Number(v);
   return 0;
+}
+
+export function toBigInt(v: unknown): bigint {
+  if (typeof v === "bigint") return v;
+  if (typeof v === "number") return BigInt(Math.round(v));
+  if (typeof v === "string") return BigInt(v);
+  return 0n;
 }

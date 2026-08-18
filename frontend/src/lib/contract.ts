@@ -4,6 +4,7 @@ import {
   Dispute,
   Purchase,
   Skill,
+  toBigInt,
   toInt,
 } from "./types";
 
@@ -26,7 +27,7 @@ function toSkill(v: any): Skill {
     title: String(o.title ?? ""),
     description: String(o.description ?? ""),
     category: String(o.category ?? ""),
-    price: toInt(o.price),
+    price: toBigInt(o.price),
     content_url: String(o.content_url ?? ""),
     status: String(o.status) as Skill["status"],
     score: toInt(o.score),
@@ -35,7 +36,7 @@ function toSkill(v: any): Skill {
     last_moderated_at: toInt(o.last_moderated_at),
     created_at: toInt(o.created_at),
     purchases: toInt(o.purchases),
-    revenue: toInt(o.revenue),
+    revenue: toBigInt(o.revenue),
     disputes: toInt(o.disputes),
     refunds: toInt(o.refunds),
   };
@@ -47,7 +48,7 @@ function toPurchase(v: any): Purchase {
     id: toInt(o.id),
     skill_id: toInt(o.skill_id),
     buyer: String(o.buyer ?? ""),
-    price: toInt(o.price),
+    price: toBigInt(o.price),
     status: String(o.status) as Purchase["status"],
     dispute_id: toInt(o.dispute_id),
     purchased_at: toInt(o.purchased_at),
@@ -79,7 +80,7 @@ function toConfig(v: any): Config {
     skill_count: toInt(o.skill_count),
     purchase_count: toInt(o.purchase_count),
     dispute_count: toInt(o.dispute_count),
-    escrow_locked: toInt(o.escrow_locked),
+    escrow_locked: toBigInt(o.escrow_locked),
     escrow_window_seconds: toInt(o.escrow_window_seconds),
     dispute_stale_seconds: toInt(o.dispute_stale_seconds),
   };
@@ -170,14 +171,20 @@ export class Marketplace {
     title: string,
     description: string,
     category: string,
-    price: number,
+    priceWei: bigint,
     contentUrl: string,
   ) {
-    return this.write("submit_skill", [title, description, category, price, contentUrl]);
+    return this.write("submit_skill", [
+      title,
+      description,
+      category,
+      priceWei,
+      contentUrl,
+    ]);
   }
 
-  async purchaseSkill(skillId: number, price: number) {
-    return this.write("purchase_skill", [skillId], BigInt(price));
+  async purchaseSkill(skillId: number, priceWei: bigint) {
+    return this.write("purchase_skill", [skillId], priceWei);
   }
 
   async releasePurchase(purchaseId: number) {

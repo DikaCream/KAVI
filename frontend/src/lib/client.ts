@@ -125,6 +125,32 @@ export function formatAddress(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-export function formatGen(amount: number): string {
-  return `${amount.toLocaleString()} GEN`;
+const GEN_DECIMALS = 18n;
+const GEN_ONE = 10n ** GEN_DECIMALS;
+
+/** Parse a decimal GEN string (e.g. "100" or "12.5") into wei, exactly. */
+export function parseGen(input: string): bigint {
+  const s = input.trim();
+  if (!/^\d+(\.\d+)?$/.test(s)) {
+    throw new Error("Invalid GEN amount");
+  }
+  const [whole, frac = ""] = s.split(".");
+  const fracPadded = (frac + "0".repeat(Number(GEN_DECIMALS))).slice(
+    0,
+    Number(GEN_DECIMALS),
+  );
+  return BigInt(whole) * GEN_ONE + BigInt(fracPadded || "0");
+}
+
+/** Format a wei amount as a human-readable GEN string. */
+export function formatGen(wei: bigint | string | number): string {
+  const w = BigInt(wei);
+  const sign = w < 0n ? "-" : "";
+  const abs = w < 0n ? -w : w;
+  const whole = abs / GEN_ONE;
+  const frac = (abs % GEN_ONE)
+    .toString()
+    .padStart(Number(GEN_DECIMALS), "0")
+    .replace(/0+$/, "");
+  return `${sign}${whole.toLocaleString()}${frac ? "." + frac : ""} GEN`;
 }
