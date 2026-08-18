@@ -1,51 +1,186 @@
+import { useState } from "react";
 import { CONTRACT_ADDRESS, NETWORK } from "../config";
 
-const FLOW = [
+const ICONS: Record<string, React.ReactNode> = {
+  submit: (
+    <>
+      <path d="M14 3v5h5" />
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M12 11v6" />
+      <path d="M9 14h6" />
+    </>
+  ),
+  fetch: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M2 12h20" />
+      <path d="M12 2a15.3 15.3 0 0 1 0 20 15.3 15.3 0 0 1 0-20z" />
+    </>
+  ),
+  judge: (
+    <>
+      <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+      <path d="M19 15l.7 1.8 1.8.7-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7z" />
+    </>
+  ),
+  compare: (
+    <>
+      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+      <path d="M7 21h10" />
+      <path d="M12 3v18" />
+    </>
+  ),
+  settle: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="m8 12 3 3 5-6" />
+    </>
+  ),
+  card: (
+    <>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M2 10h20" />
+    </>
+  ),
+  dispute: (
+    <>
+      <path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </>
+  ),
+};
+
+function Icon({ name, size = 20 }: { name: string; size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {ICONS[name]}
+    </svg>
+  );
+}
+
+const MODERATION = [
   {
-    title: "1 · Submit",
+    no: "01",
+    icon: "submit",
+    title: "Submit",
     body: "A creator calls submit_skill with a title, description, category, price and a public https content URL.",
   },
   {
-    title: "2 · Fetch",
+    no: "02",
+    icon: "fetch",
+    title: "Fetch",
     body: "Every validator fetches the content URL via gl.nondet.web.render — the same source, read independently.",
   },
   {
-    title: "3 · Judge",
+    no: "03",
+    icon: "judge",
+    title: "Judge",
     body: "An LLM call produces a JSON verdict {verdict, score, reason} for the listing.",
   },
   {
-    title: "4 · Compare",
+    no: "04",
+    icon: "compare",
+    title: "Compare",
     body: "Results are compared under an equivalence principle, not byte equality: same verdict, score in the same bucket of ten.",
   },
   {
-    title: "5 · Settle",
-    body: "The accepted verdict is written on-chain: APPROVE → ACTIVE with score, REJECT → REJECTED with the reason.",
+    no: "05",
+    icon: "settle",
+    title: "Settle",
+    body: "The accepted verdict is written on-chain: APPROVE → ACTIVE with a score, REJECT → REJECTED with the reason.",
   },
 ];
 
-const ESCROW_FLOW = [
-  { title: "Buy", body: "Buyer sends the exact price; funds are locked in per-purchase escrow." },
-  { title: "Accept", body: "Buyer releases early, or anyone releases after the 7-day window." },
-  { title: "Dispute", body: "Within the window, the buyer can open a dispute with a written complaint." },
-  { title: "Adjudicate", body: "Validators compare the listing vs content vs complaint and rule a refund percentage." },
-  { title: "Settle", body: "settle_dispute pays FULL/PARTIAL refund to the buyer or the remainder to the creator." },
+const ESCROW = [
+  {
+    no: "01",
+    icon: "card",
+    title: "Buy",
+    body: "Buyer sends the exact price; funds are locked in per-purchase escrow.",
+  },
+  {
+    no: "02",
+    icon: "settle",
+    title: "Accept",
+    body: "Buyer releases early, or anyone releases after the 7-day window.",
+  },
+  {
+    no: "03",
+    icon: "dispute",
+    title: "Dispute",
+    body: "Within the window, the buyer can open a dispute with a written complaint.",
+  },
+  {
+    no: "04",
+    icon: "compare",
+    title: "Adjudicate",
+    body: "Validators compare the listing vs content vs complaint and rule a refund percentage.",
+  },
+  {
+    no: "05",
+    icon: "card",
+    title: "Settle",
+    body: "settle_dispute pays FULL/PARTIAL refund to the buyer or the remainder to the creator.",
+  },
 ];
 
+function StepGrid({ steps }: { steps: (typeof MODERATION)[number][] }) {
+  return (
+    <div className="arch-steps">
+      {steps.map((s) => (
+        <div className="step-card" key={s.title}>
+          <div className="step-no">{s.no}</div>
+          <div className="step-icon">
+            <Icon name={s.icon} />
+          </div>
+          <h3>{s.title}</h3>
+          <p>{s.body}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Architecture() {
+  const [copied, setCopied] = useState(false);
+
+  const copyAddress = async () => {
+    if (!CONTRACT_ADDRESS) return;
+    try {
+      await navigator.clipboard.writeText(CONTRACT_ADDRESS);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
   return (
     <div className="container page">
       <div className="page-head">
         <span className="kicker">~/architecture · how consensus works</span>
         <h1 style={{ marginTop: 8 }}>Architecture</h1>
         <p className="muted">
-          How KAVI uses GenLayer's AI-validator consensus instead of
-          trusting a single operator.
+          How KAVI uses GenLayer's AI-validator consensus instead of trusting a
+          single operator.
         </p>
       </div>
 
-      <section className="panel">
+      <section className="panel arch-hero">
         <h2>Optimistic democracy</h2>
-        <p>
+        <p style={{ margin: "0 0 4px" }}>
           GenLayer resolves transactions that require <em>judgment</em>, not
           just deterministic code. A leader proposes a result, independent
           validators — each running possibly different LLMs — evaluate it, and
@@ -56,57 +191,79 @@ export default function Architecture() {
           cannot: read a web page, judge whether a listing is honest, and rule
           on a refund based on <em>meaning</em> rather than exact bytes.
         </p>
+        <div className="chips">
+          <span className="chip">1 leader proposes</span>
+          <span className="chip">n validators evaluate</span>
+          <span className="chip">equivalence, not byte-equality</span>
+          <span className="chip">consensus → finality</span>
+        </div>
       </section>
 
       <h2 className="section-title">Listing moderation</h2>
-      <ol className="flow">
-        {FLOW.map((f) => (
-          <li key={f.title}>
-            <strong>{f.title}</strong>
-            <p className="muted">{f.body}</p>
-          </li>
-        ))}
-      </ol>
+      <StepGrid steps={MODERATION} />
 
       <h2 className="section-title">Escrow & dispute</h2>
-      <ol className="flow">
-        {ESCROW_FLOW.map((f) => (
-          <li key={f.title}>
-            <strong>{f.title}</strong>
-            <p className="muted">{f.body}</p>
-          </li>
-        ))}
-      </ol>
+      <StepGrid steps={ESCROW} />
 
-      <section className="panel">
-        <h2>Equivalence principles</h2>
-        <p>
-          Two honest validators won't word an LLM answer identically, so the
-          contract compares results with custom rules:
-        </p>
-        <ul className="muted">
-          <li>
-            <strong>Moderation</strong> — verdicts must match exactly; scores
-            must fall in the same bucket of ten. Wording of the reason may
-            differ.
-          </li>
-          <li>
-            <strong>Adjudication</strong> — refund percentages must both be zero
-            or both non-zero, and in the same bucket of ten.
-          </li>
-        </ul>
-        <p className="muted">
-          Untrusted text (titles, descriptions, fetched content, complaints) is
-          fenced and neutralized so a hostile listing cannot inject
+      <h2 className="section-title">Equivalence principles</h2>
+      <div className="eq-grid">
+        <div className="eq-card">
+          <h3>
+            <span className="step-icon" style={{ width: 30, height: 30 }}>
+              <Icon name="judge" size={16} />
+            </span>
+            Moderation
+          </h3>
+          <p className="muted" style={{ margin: 0 }}>
+            Two validators won't word an LLM answer identically, so verdicts
+            are compared by rule, not string:
+          </p>
+          <div className="rule">
+            verdicts match exactly
+            <br />+ scores in the same bucket of ten
+            <br />+ reason may differ in wording
+          </div>
+        </div>
+        <div className="eq-card">
+          <h3>
+            <span className="step-icon" style={{ width: 30, height: 30 }}>
+              <Icon name="compare" size={16} />
+            </span>
+            Adjudication
+          </h3>
+          <p className="muted" style={{ margin: 0 }}>
+            Refund rulings are compared the same way — agreement on the
+            outcome, not the exact percentage:
+          </p>
+          <div className="rule">
+            both refunds zero, or both non-zero
+            <br />+ refund_pct in the same bucket of ten
+          </div>
+        </div>
+      </div>
+
+      <section className="panel" style={{ marginTop: 22 }}>
+        <h2>Defensive LLM handling</h2>
+        <p className="muted" style={{ margin: 0 }}>
+          Untrusted text (titles, descriptions, fetched content, complaints)
+          is fenced and neutralized so a hostile listing cannot inject
           instructions into the moderator or arbitrator.
         </p>
       </section>
 
-      <section className="panel">
+      <section className="panel" style={{ marginTop: 22 }}>
         <h2>Deployed contract</h2>
-        <p className="mono">{CONTRACT_ADDRESS || "not configured"}</p>
-        <p className="muted">
-          Network: {NETWORK} ·{" "}
+        <div className="code-box">
+          <span className="addr">{CONTRACT_ADDRESS || "not configured"}</span>
+          {CONTRACT_ADDRESS && (
+            <button className="ghost small" onClick={copyAddress}>
+              {copied ? "Copied ✓" : "Copy"}
+            </button>
+          )}
+        </div>
+        <p className="muted" style={{ margin: "12px 0 0" }}>
+          Network: <strong style={{ color: "var(--green)" }}>{NETWORK}</strong>
+          {" · "}
           {CONTRACT_ADDRESS && (
             <a
               href={`https://explorer-studio.genlayer.com/address/${CONTRACT_ADDRESS}`}

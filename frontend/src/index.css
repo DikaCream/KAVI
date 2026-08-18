@@ -1013,6 +1013,168 @@ code,
   margin: 4px 0 0;
 }
 
+/* ---------------------------------------------------------------- architecture v2 */
+.arch-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.arch-hero::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary), var(--magenta));
+  opacity: 0.8;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.chip {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(147, 51, 234, 0.4);
+  color: var(--primary-2);
+  background: rgba(147, 51, 234, 0.08);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.arch-steps {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.step-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid rgba(147, 51, 234, 0.22);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+
+.step-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+
+.step-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(147, 51, 234, 0.5);
+  box-shadow: 0 0 28px -12px rgba(147, 51, 234, 0.55);
+}
+
+.step-card:hover::before {
+  opacity: 0.85;
+}
+
+.step-card .step-no {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+
+.step-card .step-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(147, 51, 234, 0.14);
+  border: 1px solid rgba(147, 51, 234, 0.35);
+  color: var(--primary-2);
+  margin-bottom: 4px;
+}
+
+.step-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.step-card p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.eq-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.eq-card {
+  padding: 22px;
+  border: 1px solid rgba(147, 51, 234, 0.22);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+}
+
+.eq-card h3 {
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.05rem;
+}
+
+.eq-card .rule {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.7;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.02);
+  margin-top: 12px;
+}
+
+.code-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  background: #0d0513;
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  border-radius: 12px;
+  padding: 14px 16px;
+  overflow: hidden;
+}
+
+.code-box .addr {
+  word-break: break-all;
+  color: var(--text);
+}
+
 /* ---------------------------------------------------------------- reveal */
 .reveal {
   opacity: 0;
@@ -1211,6 +1373,14 @@ code,
 
   .toolbar select {
     max-width: none;
+  }
+
+  .arch-steps {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .eq-grid {
+    grid-template-columns: 1fr;
   }
 
   .hero {
