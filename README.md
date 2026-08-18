@@ -1,8 +1,8 @@
 # KAVI
 
-> *kavi (Sanskrit) — poet, seer; one who reads and judges.*
+> *kavi (Sanskrit): poet, seer. One who reads and judges.*
 
-**KAVI** is an on-chain marketplace for AI agent skills — *the marketplace that reads what it sells* — built on [GenLayer](https://genlayer.com). Creators list an AI skill (a title, description, category, price and a public URL hosting the skill content) and GenLayer's AI validators read every submission before it goes live. Buyers pay GEN into per-purchase escrow, and if a buyer believes a skill does not do what the listing promised, AI validators adjudicate the dispute and rule on a full, partial or no refund.
+**KAVI** is an on-chain marketplace for AI agent skills (the marketplace that reads what it sells), built on [GenLayer](https://genlayer.com). Creators list an AI skill: a title, description, category, price and a public URL hosting the skill content. GenLayer's AI validators read every submission before it goes live. Buyers pay GEN into per-purchase escrow, and if a buyer believes a skill does not do what the listing promised, AI validators adjudicate the dispute and rule on a full, partial or no refund.
 
 Unlike a normal deterministic smart contract, this is an **Intelligent Contract**: moderation and dispute resolution run through GenVM with live web access and LLM judgment, then settle on-chain through AI-validator consensus.
 
@@ -10,8 +10,8 @@ Unlike a normal deterministic smart contract, this is an **Intelligent Contract*
 
 | Feature | How it works |
 |---|---|
-| **Listing moderation** | Validators fetch the hosted content, compare it to the listing, reject spam/malware/prompt-injection, and attach a 0-100 quality score before the skill goes live. |
-| **Quality scoring** | Every approved listing carries a consensus score (0-100) surfaced in the UI. |
+| **Listing moderation** | Validators fetch the hosted content, compare it to the listing, reject spam/malware/prompt-injection, and attach a quality score from 0 to 100 before the skill goes live. |
+| **Quality scoring** | Every approved listing carries a consensus score from 0 to 100, surfaced in the UI. |
 | **Content fetch/verify** | `gl.nondet.web.render` fetches the listing's URL; SSRF is blocked by strict public-https URL validation. |
 | **Escrow purchases** | Buyers pay the exact price; funds are held per-purchase until released or a dispute resolves. |
 | **Dispute adjudication** | Validators compare the listing against the actual content and the buyer's complaint, then rule `NO_REFUND` / `PARTIAL_REFUND` / `FULL_REFUND`. |
@@ -77,7 +77,7 @@ Direct tests run the contract in memory with mocked web and LLM calls, giving mi
 ### 4. Deploy
 
 ```shell
-genlayer network set studionet          # StudioNet is gasless — no faucet needed
+genlayer network set studionet          # StudioNet is gasless (no faucet needed)
 genlayer account create --name deployer # interactive: set a keystore password
 genlayer deploy --contract contracts/ai_marketplace.py
 ```
@@ -86,10 +86,7 @@ Take note of the printed **Contract Address** and set it in the frontend (see be
 
 **Current dev deployment (StudioNet):** `0x2A7f8995EAe909575787C14629ec924AE6D1ad7D`
 
-Verified live: `get_skill_count` → `0`, and a real `submit_skill` ran full
-moderation — the validators fetched the content URL and rejected a placeholder
-page with a written review, proving the fetch → LLM → equivalence pipeline end
-to end.
+Verified live: `get_skill_count` returns `0`, and a real `submit_skill` ran full moderation. The validators fetched the content URL and rejected a placeholder page with a written review, proving the fetch → LLM → equivalence pipeline end to end.
 
 ### 5. Run integration tests (real consensus)
 
@@ -113,19 +110,19 @@ Set `VITE_GENLAYER_NETWORK=studionet` (default) or `testnet-asimov`, and `VITE_G
 
 ## How the contract works
 
-1. **Submit** — a creator calls `submit_skill(title, description, category, price, content_url)`. The URL must be a public `https://` URL (SSRF-safe: no localhost/private/metadata hosts, default port only). The skill starts `PENDING_REVIEW`.
-2. **Moderation** — `submit_skill` immediately runs moderation. Validators fetch the content, then an LLM returns `{verdict, score, reason}` JSON under an equivalence principle. `APPROVE` → `ACTIVE` with the score; `REJECT` → `REJECTED`; unparseable output fails closed and leaves it `PENDING_REVIEW` (creator can `retry_moderation`).
-3. **Purchase** — `purchase_skill(skill_id)` is `payable` and requires the exact price. Funds move into per-purchase escrow and the contract tracks `escrow_locked` so it always equals the sum of open escrows.
-4. **Release or dispute** — before the 7-day window closes only the buyer may release early; after it anyone may release to the creator. The buyer may instead `file_dispute(purchase_id, reason)` within the window.
-5. **Adjudication** — validators compare the listing against the content and the complaint, returning `{refund_pct, reason}` under an equivalence principle. The dispute becomes `RESOLVED` with an outcome.
-6. **Settle** — `settle_dispute` is permissionless and applies the outcome: `FULL_REFUND` / `PARTIAL_REFUND` back to the buyer, or `NO_REFUND` releasing to the creator. An unresolved dispute can be `close_stale_dispute`d after the stale window (fails closed back to the buyer).
+1. **Submit.** A creator calls `submit_skill(title, description, category, price, content_url)`. The URL must be a public `https://` URL (SSRF-safe: no localhost/private/metadata hosts, default port only). The skill starts `PENDING_REVIEW`.
+2. **Moderation.** `submit_skill` immediately runs moderation. Validators fetch the content, then an LLM returns `{verdict, score, reason}` JSON under an equivalence principle. `APPROVE` → `ACTIVE` with the score; `REJECT` → `REJECTED`; unparseable output fails closed and leaves it `PENDING_REVIEW` (creator can `retry_moderation`).
+3. **Purchase.** `purchase_skill(skill_id)` is `payable` and requires the exact price. Funds move into per-purchase escrow and the contract tracks `escrow_locked` so it always equals the sum of open escrows.
+4. **Release or dispute.** Before the 7-day window closes only the buyer may release early; after it anyone may release to the creator. The buyer may instead `file_dispute(purchase_id, reason)` within the window.
+5. **Adjudication.** Validators compare the listing against the content and the complaint, returning `{refund_pct, reason}` under an equivalence principle. The dispute becomes `RESOLVED` with an outcome.
+6. **Settle.** `settle_dispute` is permissionless and applies the outcome: `FULL_REFUND` / `PARTIAL_REFUND` back to the buyer, or `NO_REFUND` releasing to the creator. An unresolved dispute can be `close_stale_dispute`d after the stale window (fails closed back to the buyer).
 
 ### Equivalence principles
 
 Because two validators will not word an LLM verdict identically, the contract compares moderation and adjudication results with custom rules rather than byte equality:
 
-- **Moderation** — equivalent iff verdicts match exactly and scores fall in the same bucket of ten; reasons may differ in wording.
-- **Adjudication** — equivalent iff both refund percentages are zero or both non-zero, and fall in the same bucket of ten.
+- **Moderation:** equivalent iff verdicts match exactly and scores fall in the same bucket of ten; reasons may differ in wording.
+- **Adjudication:** equivalent iff both refund percentages are zero or both non-zero, and fall in the same bucket of ten.
 
 ### Defensive LLM handling
 
@@ -140,8 +137,8 @@ Because two validators will not word an LLM verdict identically, the contract co
 | Direct | `pytest tests/direct/ -v` | ~ms/test | No |
 | Integration | `gltest tests/integration/ -v -s` | ~min/test | Yes |
 
-**Workflow:** lint after every contract change → run direct tests frequently → run integration tests before deploying to verify consensus behavior.
+**Workflow:** lint after every contract change, then run direct tests frequently, then run integration tests before deploying to verify consensus behavior.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
