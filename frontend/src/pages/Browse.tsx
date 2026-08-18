@@ -42,9 +42,10 @@ export default function Browse() {
   return (
     <div className="container page">
       <div className="page-head">
-        <h1>Browse skills</h1>
+        <span className="kicker">~/browse · on-chain listings</span>
+        <h1 style={{ marginTop: 8 }}>Browse skills</h1>
         <p className="muted">
-          Every listing below was approved by GenLayer's AI validators.
+          Every listing below was read and approved by GenLayer's AI validators.
         </p>
       </div>
 

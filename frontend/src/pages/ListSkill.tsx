@@ -49,7 +49,8 @@ export default function ListSkill() {
   return (
     <div className="container page narrow">
       <div className="page-head">
-        <h1>List an AI skill</h1>
+        <span className="kicker">~/list · submit for review</span>
+        <h1 style={{ marginTop: 8 }}>List an AI skill</h1>
         <p className="muted">
           Describe what your skill does and link its public content. GenLayer's
           validators read it and decide whether it goes live.

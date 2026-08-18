@@ -5,6 +5,44 @@ import ParticleField from "../components/ParticleField";
 import ScrollReveal from "../components/ScrollReveal";
 import { useMarketplace } from "../context/MarketplaceContext";
 
+const REGIONS = [
+  {
+    coord: "~/browse",
+    title: "Browse",
+    body: "Every approved skill on-chain, scored by validators.",
+    to: "/browse",
+    color: "#06d6c4",
+  },
+  {
+    coord: "~/list",
+    title: "List a skill",
+    body: "Submit your agent for validator review.",
+    to: "/list",
+    color: "#9b8fff",
+  },
+  {
+    coord: "~/dashboard",
+    title: "Dashboard",
+    body: "Your listings, sales, and locked escrow.",
+    to: "/dashboard",
+    color: "#cfff04",
+  },
+  {
+    coord: "~/architecture",
+    title: "Architecture",
+    body: "How the AI validators reach consensus.",
+    to: "/architecture",
+    color: "#b14dff",
+  },
+  {
+    coord: "~/dispute",
+    title: "Dispute",
+    body: "Let the AI jury rule on a refund.",
+    to: "/architecture",
+    color: "#ff3d7a",
+  },
+];
+
 const FEATURES = [
   {
     icon: "🧠",
@@ -29,26 +67,10 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  {
-    n: "01",
-    title: "List a skill",
-    body: "Describe what your agent does and link its public content.",
-  },
-  {
-    n: "02",
-    title: "Validators review it",
-    body: "They fetch the content, verify it matches, and score it.",
-  },
-  {
-    n: "03",
-    title: "Buyers pay into escrow",
-    body: "Funds stay locked until delivery is accepted.",
-  },
-  {
-    n: "04",
-    title: "Disputes are adjudicated",
-    body: "Validators compare the listing to the content and rule the refund.",
-  },
+  { n: "01", title: "List", body: "Describe your agent and link its public content." },
+  { n: "02", title: "Review", body: "Validators fetch it, verify it, and score it." },
+  { n: "03", title: "Escrow", body: "Funds stay locked until delivery is accepted." },
+  { n: "04", title: "Adjudicate", body: "Validators compare listing vs content and rule." },
 ];
 
 export default function Home() {
@@ -75,7 +97,7 @@ export default function Home() {
         <div className="container">
           <span className="eyebrow">
             <span className="pulse" />
-            Built on GenLayer · AI-validator consensus
+            ~/manifesto · estás aquí
           </span>
           <h1>
             The marketplace that
@@ -83,13 +105,14 @@ export default function Home() {
             <span className="grad">reads what it sells.</span>
           </h1>
           <p className="lede">
-            Every skill is fetched, judged, and scored by a decentralized quorum
-            of AI validators before it goes live. When something goes wrong, the
-            same validators rule on your refund — on-chain, with no middleman.
+            A living map of AI agents, judged on-chain. Every listing is
+            fetched, read, and scored by a decentralized quorum of validators.
+            Every payment sits in escrow. Every dispute ends in a written
+            verdict. Net results — no noise.
           </p>
           <div className="hero-cta">
             <Link to="/browse" className="primary">
-              Browse skills →
+              Enter the map →
             </Link>
             <Link to="/list" className="ghost">
               List a skill
@@ -106,18 +129,23 @@ export default function Home() {
 
       <section className="container section">
         <ScrollReveal>
-          <h2 className="section-title">
-            No middleman. <span className="accent">No trust-me.</span>
+          <span className="kicker">site map · estás aquí</span>
+          <h2 className="section-title" style={{ marginTop: 10 }}>
+            Choose a region
           </h2>
         </ScrollReveal>
-        <div className="grid features">
-          {FEATURES.map((f, i) => (
-            <ScrollReveal key={f.title} delay={i * 70}>
-              <div className="feature-card">
-                <div className="icon">{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.body}</p>
-              </div>
+        <div className="map-grid">
+          {REGIONS.map((r, i) => (
+            <ScrollReveal key={r.coord} delay={i * 60}>
+              <Link
+                to={r.to}
+                className="map-region"
+                style={{ ["--rc" as string]: r.color }}
+              >
+                <span className="region-coord">{r.coord}</span>
+                <h3>{r.title}</h3>
+                <p>{r.body}</p>
+              </Link>
             </ScrollReveal>
           ))}
         </div>
@@ -126,15 +154,18 @@ export default function Home() {
       <section className="section alt">
         <div className="container">
           <ScrollReveal>
-            <h2 className="section-title">How a listing goes live</h2>
+            <span className="kicker">principles · the origin</span>
+            <h2 className="section-title" style={{ marginTop: 10 }}>
+              No middleman. No trust-me.
+            </h2>
           </ScrollReveal>
-          <div className="steps">
-            {STEPS.map((s, i) => (
-              <ScrollReveal key={s.n} delay={i * 70}>
-                <div className="step">
-                  <div className="step-n">{s.n}</div>
-                  <h3>{s.title}</h3>
-                  <p>{s.body}</p>
+          <div className="grid features">
+            {FEATURES.map((f, i) => (
+              <ScrollReveal key={f.title} delay={i * 70}>
+                <div className="feature-card">
+                  <div className="icon">{f.icon}</div>
+                  <h3>{f.title}</h3>
+                  <p>{f.body}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -142,17 +173,40 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="container section cta-band">
+      <section className="container section">
         <ScrollReveal>
-          <h2>Put your skill in front of an AI jury.</h2>
-          <p className="muted">
-            Connect a wallet, describe what your agent does, and let the
-            validators decide if it belongs on-chain.
-          </p>
-          <Link to="/list" className="primary">
-            List a skill
-          </Link>
+          <span className="kicker">workflow · how it goes live</span>
+          <h2 className="section-title" style={{ marginTop: 10 }}>
+            From listing to verdict
+          </h2>
         </ScrollReveal>
+        <div className="steps">
+          {STEPS.map((s, i) => (
+            <ScrollReveal key={s.n} delay={i * 70}>
+              <div className="step">
+                <div className="step-n">{s.n}</div>
+                <h3>{s.title}</h3>
+                <p>{s.body}</p>
+              </div>
+            </ScrollReveal>
+          ))}
+        </div>
+      </section>
+
+      <section className="section alt cta-band">
+        <div className="container">
+          <ScrollReveal>
+            <span className="kicker">the origin · start here</span>
+            <h2 style={{ margin: "10px 0 12px" }}>Put your skill in front of an AI jury.</h2>
+            <p className="muted">
+              Connect a wallet, describe what your agent does, and let the
+              validators decide if it belongs on-chain.
+            </p>
+            <Link to="/list" className="primary">
+              List a skill
+            </Link>
+          </ScrollReveal>
+        </div>
       </section>
     </div>
   );

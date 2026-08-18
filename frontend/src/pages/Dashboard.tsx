@@ -60,8 +60,9 @@ export default function Dashboard() {
   return (
     <div className="container page">
       <div className="page-head">
-        <h1>Dashboard</h1>
-        <p className="muted">Your listings and purchases on AI Marketplace.</p>
+        <span className="kicker">~/dashboard · your activity</span>
+        <h1 style={{ marginTop: 8 }}>Dashboard</h1>
+        <p className="muted">Your listings, sales, and escrow on-chain.</p>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
