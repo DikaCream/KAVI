@@ -12,7 +12,7 @@ export default function WalletButton() {
           title={
             wallet.isRightNetwork
               ? "On GenLayer StudioNet"
-              : "Wrong network — switch to StudioNet"
+              : "Wrong network. Switch to StudioNet"
           }
         >
           {wallet.isRightNetwork ? "StudioNet" : "Wrong network"}

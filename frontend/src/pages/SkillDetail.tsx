@@ -46,7 +46,7 @@ export default function SkillDetail() {
     try {
       const hash = await contract.purchaseSkill(skill.id, skill.price);
       await contract.waitForReceipt(hash, 60, 4000);
-      setNotice("Purchase confirmed — funds are now held in escrow.");
+      setNotice("Purchase confirmed. Funds are now held in escrow.");
       refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Purchase failed.");

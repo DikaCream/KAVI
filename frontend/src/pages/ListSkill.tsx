@@ -104,7 +104,7 @@ export default function ListSkill() {
       );
       await contract.waitForReceipt(hash, 60, 4000);
       setNotice(
-        "Skill submitted. AI validators are reviewing it now — check your dashboard for the verdict.",
+        "Skill submitted. AI validators are reviewing it now. Check your dashboard for the verdict.",
       );
       setTitle("");
       setDescription("");
@@ -285,7 +285,7 @@ export default function ListSkill() {
             </li>
             <li>
               The verdict is settled by AI-validator consensus under an
-              equivalence principle — not by a single operator.
+              equivalence principle, not by a single operator.
             </li>
           </ol>
           <p className="muted" style={{ fontSize: "0.85rem" }}>

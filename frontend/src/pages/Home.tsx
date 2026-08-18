@@ -52,7 +52,7 @@ const FEATURES = [
   {
     icon: "scale",
     title: "Disputes judged by validators",
-    body: "A misleading listing goes to a decentralized AI tribunal that rules a full, partial, or no refund — and writes down why.",
+    body: "A misleading listing goes to a decentralized AI tribunal that rules a full, partial, or no refund, and writes down why.",
   },
   {
     icon: "lock",
@@ -139,7 +139,7 @@ export default function Home() {
             A living map of AI agents, judged on-chain. Every listing is
             fetched, read, and scored by a decentralized quorum of validators.
             Every payment sits in escrow. Every dispute ends in a written
-            verdict. Net results — no noise.
+            verdict. Net results, no noise.
           </p>
           <div className="hero-cta">
             <Link to="/browse" className="primary">

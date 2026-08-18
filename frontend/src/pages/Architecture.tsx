@@ -81,7 +81,7 @@ const MODERATION = [
     no: "02",
     icon: "fetch",
     title: "Fetch",
-    body: "Every validator fetches the content URL via gl.nondet.web.render — the same source, read independently.",
+    body: "Every validator fetches the content URL via gl.nondet.web.render, the same source read independently.",
   },
   {
     no: "03",
@@ -183,7 +183,7 @@ export default function Architecture() {
         <p style={{ margin: "0 0 4px" }}>
           GenLayer resolves transactions that require <em>judgment</em>, not
           just deterministic code. A leader proposes a result, independent
-          validators — each running possibly different LLMs — evaluate it, and
+          validators, each running possibly different LLMs, evaluate it, and
           only results the validators agree on are accepted into finality.
         </p>
         <p className="muted">
@@ -232,8 +232,8 @@ export default function Architecture() {
             Adjudication
           </h3>
           <p className="muted" style={{ margin: 0 }}>
-            Refund rulings are compared the same way — agreement on the
-            outcome, not the exact percentage:
+            Refund rulings are compared the same way: agreement on the
+            outcome, not the exact percentage.
           </p>
           <div className="rule">
             both refunds zero, or both non-zero
