@@ -52,10 +52,15 @@ export default function Browse() {
       <div className="toolbar">
         <input
           placeholder="Search skills, categories, descriptions…"
+          aria-label="Search skills"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          aria-label="Filter by category"
+        >
           <option value="">All categories</option>
           {categories.map((c) => (
             <option key={c} value={c}>

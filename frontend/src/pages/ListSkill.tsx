@@ -1,7 +1,54 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMarketplace } from "../context/MarketplaceContext";
 import { parseGen } from "../lib/client";
+
+type Errors = Partial<Record<"title" | "description" | "category" | "price" | "contentUrl", string>>;
+
+const FIELDS = [
+  { key: "title", label: "Title" },
+  { key: "description", label: "Description" },
+  { key: "category", label: "Category" },
+  { key: "price", label: "Price" },
+  { key: "contentUrl", label: "Content URL" },
+] as const;
+
+/** Client-side mirror of the contract's own input bounds. */
+function validateField(
+  key: keyof Errors,
+  value: string,
+): string | undefined {
+  const v = value.trim();
+  switch (key) {
+    case "title":
+      if (v.length < 3) return "Title must be at least 3 characters.";
+      if (v.length > 120) return "Title must be 120 characters or fewer.";
+      return undefined;
+    case "description":
+      if (v.length < 50)
+        return `Description must be at least 50 characters (${v.length}/50).`;
+      if (v.length > 4000) return "Description must be 4000 characters or fewer.";
+      return undefined;
+    case "category":
+      if (v.length < 3) return "Category must be at least 3 characters.";
+      if (v.length > 40) return "Category must be 40 characters or fewer.";
+      return undefined;
+    case "price":
+      if (!/^\d+(\.\d+)?$/.test(v)) return "Price must be a positive number, e.g. 25 or 12.5.";
+      if (Number(v) <= 0) return "Price must be greater than zero.";
+      return undefined;
+    case "contentUrl":
+      if (!/^https:\/\//i.test(v))
+        return "Content URL must start with https://";
+      if (/\s/.test(v)) return "Content URL cannot contain spaces.";
+      const rest = v.replace(/^https:\/\//i, "").split(/[/?#]/)[0].toLowerCase();
+      if (!rest.includes(".")) return "Content URL must be a public host, e.g. github.com.";
+      const blocked = ["localhost", "127.", "10.", "192.168.", "169.254.", "metadata", ".local", ".internal"];
+      if (blocked.some((b) => rest.includes(b)))
+        return "Private, local, or metadata hosts are rejected.";
+      return undefined;
+  }
+}
 
 export default function ListSkill() {
   const { contract, wallet } = useMarketplace();
@@ -10,13 +57,38 @@ export default function ListSkill() {
   const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
   const [contentUrl, setContentUrl] = useState("");
+  const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
+
+  const validate = (): Errors => {
+    const next: Errors = {};
+    for (const f of FIELDS) {
+      const msg = validateField(f.key, f.key === "price" ? price : f.key === "title" ? title : f.key === "description" ? description : f.key === "category" ? category : contentUrl);
+      if (msg) next[f.key] = msg;
+    }
+    return next;
+  };
+
+  const handleBlur = (key: keyof Errors, value: string) => {
+    setErrors((prev) => ({ ...prev, [key]: validateField(key, value) }));
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNotice(null);
+    const next = validate();
+    setErrors(next);
+    const keys = Object.keys(next) as (keyof Errors)[];
+    if (keys.length > 0) {
+      // Move focus to the error summary so keyboard/screen-reader users
+      // find the problems immediately (WCAG 3.3.1).
+      requestAnimationFrame(() => summaryRef.current?.focus());
+      return;
+    }
     if (!wallet.address) {
       setError("Connect your wallet to list a skill.");
       return;
@@ -39,6 +111,7 @@ export default function ListSkill() {
       setCategory("");
       setPrice("");
       setContentUrl("");
+      setErrors({});
     } catch (err) {
       setError(err instanceof Error ? err.message : "Submission failed.");
     } finally {
@@ -68,59 +141,124 @@ export default function ListSkill() {
       )}
 
       <div className="grid two-col">
-        <form className="panel form" onSubmit={submit}>
-          <label>
+        <form className="panel form" onSubmit={submit} noValidate>
+          {Object.keys(errors).length > 0 && (
+            <div
+              className="error-summary"
+              role="alert"
+              tabIndex={-1}
+              ref={summaryRef}
+            >
+              <h2>There is a problem</h2>
+              <ul>
+                {FIELDS.filter((f) => errors[f.key]).map((f) => (
+                  <li key={f.key}>
+                    <a href={`#${f.key}`}>
+                      {errors[f.key]}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <label htmlFor="title">
             Title
             <input
+              id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onBlur={(e) => handleBlur("title", e.target.value)}
               required
               minLength={3}
               maxLength={120}
               placeholder="e.g. Web scraping agent"
+              aria-invalid={errors.title ? true : undefined}
+              aria-describedby={errors.title ? "title-error" : undefined}
             />
+            {errors.title && (
+              <span className="field-error" id="title-error">
+                {errors.title}
+              </span>
+            )}
           </label>
-          <label>
+          <label htmlFor="description">
             Description (what it does, in plain English)
             <textarea
+              id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              onBlur={(e) => handleBlur("description", e.target.value)}
               required
               minLength={50}
               maxLength={4000}
               rows={5}
               placeholder="Explain the skill's inputs, outputs, and what problem it solves…"
+              aria-invalid={errors.description ? true : undefined}
+              aria-describedby={errors.description ? "description-error" : undefined}
             />
+            {errors.description && (
+              <span className="field-error" id="description-error">
+                {errors.description}
+              </span>
+            )}
           </label>
-          <label>
+          <label htmlFor="category">
             Category
             <input
+              id="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
+              onBlur={(e) => handleBlur("category", e.target.value)}
               required
               minLength={3}
               maxLength={40}
               placeholder="automation, data, security…"
+              aria-invalid={errors.category ? true : undefined}
+              aria-describedby={errors.category ? "category-error" : undefined}
             />
+            {errors.category && (
+              <span className="field-error" id="category-error">
+                {errors.category}
+              </span>
+            )}
           </label>
-          <label>
+          <label htmlFor="price">
             Price (GEN)
             <input
+              id="price"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
+              onBlur={(e) => handleBlur("price", e.target.value)}
               required
-              pattern="[0-9]+(\.[0-9]+)?"
+              inputMode="decimal"
               placeholder="e.g. 50"
+              aria-invalid={errors.price ? true : undefined}
+              aria-describedby={errors.price ? "price-error" : undefined}
             />
+            {errors.price && (
+              <span className="field-error" id="price-error">
+                {errors.price}
+              </span>
+            )}
           </label>
-          <label>
+          <label htmlFor="contentUrl">
             Content URL (public https:// where the skill content lives)
             <input
+              id="contentUrl"
               value={contentUrl}
               onChange={(e) => setContentUrl(e.target.value)}
+              onBlur={(e) => handleBlur("contentUrl", e.target.value)}
               required
               placeholder="https://github.com/you/skill/blob/main/SKILL.md"
+              aria-invalid={errors.contentUrl ? true : undefined}
+              aria-describedby={errors.contentUrl ? "contentUrl-error" : undefined}
             />
+            {errors.contentUrl && (
+              <span className="field-error" id="contentUrl-error">
+                {errors.contentUrl}
+              </span>
+            )}
           </label>
           <button
             className="primary"

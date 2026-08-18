@@ -10,6 +10,8 @@
 *.sw?
 .env
 node_modules
+# Installed agent skills (tracked via skills-lock.json)
+.agents/
 # Python
 .venv/
 __pycache__/

@@ -96,7 +96,7 @@ export default function SkillDetail() {
               <button className="ghost">View content ↗</button>
             </a>
             <button
-              className="primary"
+              className="buy"
               onClick={buy}
               disabled={buying || !wallet.address || skill.status !== "ACTIVE"}
             >

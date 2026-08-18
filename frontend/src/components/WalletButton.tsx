@@ -25,6 +25,7 @@ export default function WalletButton() {
           className="ghost small"
           onClick={wallet.disconnect}
           title="Disconnect"
+          aria-label="Disconnect wallet"
         >
           ✕
         </button>

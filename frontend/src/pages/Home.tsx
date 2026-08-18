@@ -45,26 +45,57 @@ const REGIONS = [
 
 const FEATURES = [
   {
-    icon: "🧠",
+    icon: "eye",
     title: "AI reads every listing",
     body: "Validators fetch your content URL and check it actually does what the listing claims. Spam, scams, and prompt-injection never make it on-chain.",
   },
   {
-    icon: "⚖️",
+    icon: "scale",
     title: "Disputes judged by validators",
     body: "A misleading listing goes to a decentralized AI tribunal that rules a full, partial, or no refund — and writes down why.",
   },
   {
-    icon: "🔒",
+    icon: "lock",
     title: "Escrow, not promises",
     body: "Payment is locked per-purchase. The seller gets paid only when you accept delivery, or when the escrow window closes.",
   },
   {
-    icon: "🎯",
+    icon: "target",
     title: "Quality you can compare",
     body: "Approved skills carry a consensus score from 0–100, so you can tell a polished agent from a rough one before paying.",
   },
 ];
+
+const ICON_PATHS: Record<string, React.ReactNode> = {
+  eye: (
+    <>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  scale: (
+    <>
+      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+      <path d="M7 21h10" />
+      <path d="M12 3v18" />
+      <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </>
+  ),
+  target: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </>
+  ),
+};
 
 const STEPS = [
   { n: "01", title: "List", body: "Describe your agent and link its public content." },
@@ -163,7 +194,20 @@ export default function Home() {
             {FEATURES.map((f, i) => (
               <ScrollReveal key={f.title} delay={i * 70}>
                 <div className="feature-card">
-                  <div className="icon">{f.icon}</div>
+                  <div className="icon" aria-hidden="true">
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      {ICON_PATHS[f.icon]}
+                    </svg>
+                  </div>
                   <h3>{f.title}</h3>
                   <p>{f.body}</p>
                 </div>

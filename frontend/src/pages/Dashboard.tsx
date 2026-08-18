@@ -186,7 +186,7 @@ function PurchaseRow({
       {p.status === "ESCROWED" && (
         <div className="row" style={{ marginTop: 10 }}>
           <button
-            className="primary"
+            className="buy"
             disabled={busy !== null}
             onClick={() =>
               run("release", () => contract.releasePurchase(p.id))
@@ -212,6 +212,7 @@ function PurchaseRow({
             placeholder="Explain what the skill does not deliver vs its listing (50+ chars)…"
             rows={3}
             minLength={50}
+            aria-label="Dispute reason"
           />
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <button
