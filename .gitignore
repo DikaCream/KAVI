@@ -1,0 +1,29 @@
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.env
+node_modules
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+# Frontend build output
+/frontend/dist/
+*.tsbuildinfo
+/context
+/frontend/.next
+/frontend/next-env.d.ts
+/frontend/bun.lock
+/frontend/package-lock.json
+*.compiled.js
+package-lock.json
+
