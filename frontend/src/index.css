@@ -1238,6 +1238,17 @@ code,
   margin-top: 3px;
 }
 
+.char-count {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.char-count.ok {
+  color: var(--green);
+}
+
 .notice {
   border: 1px dashed var(--border);
   border-radius: 12px;

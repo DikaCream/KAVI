@@ -76,6 +76,21 @@ export default function ListSkill() {
     setErrors((prev) => ({ ...prev, [key]: validateField(key, value) }));
   };
 
+  // Clear a field's error as soon as the value becomes valid again, so the
+  // summary disappears the moment everything is correct (no need to re-submit).
+  const clearErrorIfValid = (key: keyof Errors, value: string) => {
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const msg = validateField(key, value);
+      if (!msg) {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      return prev;
+    });
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -149,7 +164,7 @@ export default function ListSkill() {
               tabIndex={-1}
               ref={summaryRef}
             >
-              <h2>There is a problem</h2>
+              <h2>Please fix the following before submitting</h2>
               <ul>
                 {FIELDS.filter((f) => errors[f.key]).map((f) => (
                   <li key={f.key}>
@@ -167,7 +182,10 @@ export default function ListSkill() {
             <input
               id="title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                clearErrorIfValid("title", e.target.value);
+              }}
               onBlur={(e) => handleBlur("title", e.target.value)}
               required
               minLength={3}
@@ -187,7 +205,10 @@ export default function ListSkill() {
             <textarea
               id="description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                clearErrorIfValid("description", e.target.value);
+              }}
               onBlur={(e) => handleBlur("description", e.target.value)}
               required
               minLength={50}
@@ -197,6 +218,12 @@ export default function ListSkill() {
               aria-invalid={errors.description ? true : undefined}
               aria-describedby={errors.description ? "description-error" : undefined}
             />
+            <span
+              className={`char-count ${description.trim().length >= 50 ? "ok" : ""}`}
+              aria-live="polite"
+            >
+              {description.trim().length}/50 minimum
+            </span>
             {errors.description && (
               <span className="field-error" id="description-error">
                 {errors.description}
@@ -208,7 +235,10 @@ export default function ListSkill() {
             <input
               id="category"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                clearErrorIfValid("category", e.target.value);
+              }}
               onBlur={(e) => handleBlur("category", e.target.value)}
               required
               minLength={3}
@@ -228,7 +258,10 @@ export default function ListSkill() {
             <input
               id="price"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => {
+                setPrice(e.target.value);
+                clearErrorIfValid("price", e.target.value);
+              }}
               onBlur={(e) => handleBlur("price", e.target.value)}
               required
               inputMode="decimal"
@@ -248,7 +281,10 @@ export default function ListSkill() {
             <input
               id="contentUrl"
               value={contentUrl}
-              onChange={(e) => setContentUrl(e.target.value)}
+              onChange={(e) => {
+                setContentUrl(e.target.value);
+                clearErrorIfValid("contentUrl", e.target.value);
+              }}
               onBlur={(e) => handleBlur("contentUrl", e.target.value)}
               required
               placeholder="https://github.com/you/skill/blob/main/SKILL.md"
