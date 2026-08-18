@@ -1,4 +1,6 @@
-import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import Logo from "./Logo";
 import WalletButton from "./WalletButton";
 
 const LINKS = [
@@ -10,12 +12,20 @@ const LINKS = [
 ];
 
 export default function Navbar() {
+  const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
   return (
     <nav className="navbar">
-      <NavLink to="/" className="brand">
-        AI<span>Marketplace</span>
-      </NavLink>
-      <div className="nav-links">
+      <Link to="/" aria-label="AI Marketplace home">
+        <Logo />
+      </Link>
+
+      <div className={`nav-links ${open ? "open" : ""}`}>
         {LINKS.map((l) => (
           <NavLink
             key={l.to}
@@ -29,8 +39,18 @@ export default function Navbar() {
           </NavLink>
         ))}
       </div>
+
       <div className="spacer" />
+
       <WalletButton />
+      <button
+        className="hamburger"
+        aria-label="Toggle menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        {open ? "✕" : "☰"}
+      </button>
     </nav>
   );
 }

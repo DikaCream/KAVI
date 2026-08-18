@@ -1,15 +1,14 @@
 import { Link } from "react-router-dom";
 import { CONTRACT_ADDRESS } from "../config";
+import Logo from "./Logo";
 
 export default function Footer() {
   return (
     <footer className="footer">
       <div className="container footer-grid">
         <div>
-          <div className="brand">
-            AI<span>Marketplace</span>
-          </div>
-          <p className="muted" style={{ maxWidth: 360 }}>
+          <Logo />
+          <p className="muted" style={{ maxWidth: 360, marginTop: 12 }}>
             An on-chain marketplace for AI skills, moderated and adjudicated by
             GenLayer's AI validators.
           </p>
