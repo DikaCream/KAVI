@@ -45,7 +45,7 @@ def test_purchase_not_active_reverts(direct_vm, direct_deploy, direct_alice, dir
     from tests.direct.conftest import mock_moderation
 
     mock_moderation(direct_vm, verdict="REJECT", score=10, reason="bad")
-    sid = int(contract.submit_skill("Bad", "A skill that is clearly spam and should be rejected by validators.", "tools", 10, GOOD_URL))
+    sid = int(contract.submit_skill("Bad Skill", "A skill that is clearly spam and should be rejected by validators.", "tools", 10, GOOD_URL))
     direct_vm.clear_mocks()
 
     direct_vm.sender = direct_bob

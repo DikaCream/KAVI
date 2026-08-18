@@ -30,7 +30,7 @@ def test_submit_rejected(direct_vm, direct_deploy, direct_alice):
     direct_vm.sender = direct_alice
     mock_moderation(direct_vm, verdict="REJECT", score=20, reason="Spam listing.")
     sid = int(
-        contract.submit_skill("Scam", GOOD_DESCRIPTION, "automation", 100, GOOD_URL)
+        contract.submit_skill("Scam Skill", GOOD_DESCRIPTION, "automation", 100, GOOD_URL)
     )
     s = contract.get_skill(sid)
     assert s["status"] == "REJECTED"
@@ -121,8 +121,14 @@ def test_submit_throttled(direct_vm, direct_deploy, direct_alice):
 def test_submit_validates_title(direct_vm, direct_deploy, direct_alice):
     contract = direct_deploy("contracts/ai_marketplace.py")
     direct_vm.sender = direct_alice
-    with direct_vm.expect_revert("title must be 3-120 characters"):
-        contract.submit_skill("X", GOOD_DESCRIPTION, "automation", 100, GOOD_URL)
+    # A 4-character title is now below the 5-character minimum.
+    with direct_vm.expect_revert("title must be 5-120 characters"):
+        contract.submit_skill("Four", GOOD_DESCRIPTION, "automation", 100, GOOD_URL)
+    # Exactly 5 characters is accepted.
+    sid = int(
+        contract.submit_skill("Five!", GOOD_DESCRIPTION, "automation", 100, GOOD_URL)
+    )
+    assert contract.get_skill(sid)["title"] == "Five!"
 
 
 def test_submit_validates_description(direct_vm, direct_deploy, direct_alice):
@@ -135,8 +141,13 @@ def test_submit_validates_description(direct_vm, direct_deploy, direct_alice):
 def test_submit_validates_category(direct_vm, direct_deploy, direct_alice):
     contract = direct_deploy("contracts/ai_marketplace.py")
     direct_vm.sender = direct_alice
-    with direct_vm.expect_revert("category must be 3-40 characters"):
+    # An empty category is rejected; a single character is now accepted.
+    with direct_vm.expect_revert("category must be 1-40 characters"):
+        contract.submit_skill("Valid", GOOD_DESCRIPTION, "", 100, GOOD_URL)
+    sid = int(
         contract.submit_skill("Valid", GOOD_DESCRIPTION, "x", 100, GOOD_URL)
+    )
+    assert contract.get_skill(sid)["category"] == "x"
 
 
 def test_submit_accepts_free_price(direct_vm, direct_deploy, direct_alice):

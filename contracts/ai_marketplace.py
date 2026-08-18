@@ -370,12 +370,12 @@ class AIMarketplace(gl.Contract):
         description = _strip_control_chars(description).strip()
         category = _strip_control_chars(category).strip()
         content_url = content_url.strip()
-        if not (3 <= len(title) <= 120):
-            raise gl.vm.UserError("title must be 3-120 characters")
+        if not (5 <= len(title) <= 120):
+            raise gl.vm.UserError("title must be 5-120 characters")
         if not (50 <= len(description) <= 4000):
             raise gl.vm.UserError("description must be 50-4000 characters")
-        if not (3 <= len(category) <= 40):
-            raise gl.vm.UserError("category must be 3-40 characters")
+        if not (1 <= len(category) <= 40):
+            raise gl.vm.UserError("category must be 1-40 characters")
         # Price is a u256 so it cannot go negative; 0 means a free listing.
         if int(price) > MAX_PRICE_GEN * GEN_ONE:
             raise gl.vm.UserError("price must be 100 GEN or less")

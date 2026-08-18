@@ -21,7 +21,7 @@ function validateField(
   const v = value.trim();
   switch (key) {
     case "title":
-      if (v.length < 3) return "Title must be at least 3 characters.";
+      if (v.length < 5) return "Title must be at least 5 characters.";
       if (v.length > 120) return "Title must be 120 characters or fewer.";
       return undefined;
     case "description":
@@ -30,7 +30,7 @@ function validateField(
       if (v.length > 4000) return "Description must be 4000 characters or fewer.";
       return undefined;
     case "category":
-      if (v.length < 3) return "Category must be at least 3 characters.";
+      // Any non-empty category is fine (min 1 character); only the cap matters.
       if (v.length > 40) return "Category must be 40 characters or fewer.";
       return undefined;
     case "price":
@@ -63,17 +63,45 @@ export default function ListSkill() {
   const [error, setError] = useState<string | null>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
 
+  const fieldValue = (key: keyof Errors): string => {
+    switch (key) {
+      case "title":
+        return title;
+      case "description":
+        return description;
+      case "category":
+        return category;
+      case "price":
+        return price;
+      case "contentUrl":
+        return contentUrl;
+    }
+  };
+
   const validate = (): Errors => {
     const next: Errors = {};
     for (const f of FIELDS) {
-      const msg = validateField(f.key, f.key === "price" ? price : f.key === "title" ? title : f.key === "description" ? description : f.key === "category" ? category : contentUrl);
+      const val = fieldValue(f.key);
+      // Empty fields are not "wrong input" — only entered-but-invalid values
+      // trigger the summary. Empty required fields are handled separately
+      // by focusing the first one, so no error banner appears for a fresh form.
+      if (!val.trim()) continue;
+      const msg = validateField(f.key, val);
       if (msg) next[f.key] = msg;
     }
     return next;
   };
 
   const handleBlur = (key: keyof Errors, value: string) => {
-    setErrors((prev) => ({ ...prev, [key]: validateField(key, value) }));
+    setErrors((prev) => {
+      if (!value.trim()) {
+        // Empty fields are not a content error; just clear any stale one.
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      return { ...prev, [key]: validateField(key, value) };
+    });
   };
 
   // Clear a field's error as soon as the value becomes valid again, so the
@@ -102,6 +130,13 @@ export default function ListSkill() {
       // Move focus to the error summary so keyboard/screen-reader users
       // find the problems immediately (WCAG 3.3.1).
       requestAnimationFrame(() => summaryRef.current?.focus());
+      return;
+    }
+    // Nothing was entered wrongly, but required fields may still be empty.
+    // Focus the first empty field silently instead of showing an error banner.
+    const firstEmpty = FIELDS.find((f) => fieldValue(f.key).trim() === "");
+    if (firstEmpty) {
+      document.getElementById(firstEmpty.key)?.focus();
       return;
     }
     if (!wallet.address) {
@@ -188,7 +223,7 @@ export default function ListSkill() {
               }}
               onBlur={(e) => handleBlur("title", e.target.value)}
               required
-              minLength={3}
+              minLength={5}
               maxLength={120}
               placeholder="e.g. Web scraping agent"
               aria-invalid={errors.title ? true : undefined}
@@ -241,7 +276,6 @@ export default function ListSkill() {
               }}
               onBlur={(e) => handleBlur("category", e.target.value)}
               required
-              minLength={3}
               maxLength={40}
               placeholder="automation, data, security…"
               aria-invalid={errors.category ? true : undefined}
