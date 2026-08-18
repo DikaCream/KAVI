@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import AnimatedNumber from "../components/AnimatedNumber";
-import ParticleField from "../components/ParticleField";
+import OrbField from "../components/OrbField";
 import ScrollReveal from "../components/ScrollReveal";
 import { useMarketplace } from "../context/MarketplaceContext";
 
@@ -11,35 +11,35 @@ const REGIONS = [
     title: "Browse",
     body: "Every approved skill on-chain, scored by validators.",
     to: "/browse",
-    color: "#06d6c4",
+    color: "#22d3ee",
   },
   {
     coord: "~/list",
     title: "List a skill",
     body: "Submit your agent for validator review.",
     to: "/list",
-    color: "#9b8fff",
+    color: "#a855f7",
   },
   {
     coord: "~/dashboard",
     title: "Dashboard",
     body: "Your listings, sales, and locked escrow.",
     to: "/dashboard",
-    color: "#cfff04",
+    color: "#a3e635",
   },
   {
     coord: "~/architecture",
     title: "Architecture",
     body: "How the AI validators reach consensus.",
     to: "/architecture",
-    color: "#b14dff",
+    color: "#e879f9",
   },
   {
     coord: "~/dispute",
     title: "Dispute",
     body: "Let the AI jury rule on a refund.",
     to: "/architecture",
-    color: "#ff3d7a",
+    color: "#fb7185",
   },
 ];
 
@@ -124,7 +124,7 @@ export default function Home() {
   return (
     <div className="page" style={{ paddingTop: 0 }}>
       <section className="hero">
-        <ParticleField />
+        <OrbField />
         <div className="container">
           <span className="eyebrow">
             <span className="pulse" />

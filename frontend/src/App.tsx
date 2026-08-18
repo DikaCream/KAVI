@@ -21,6 +21,7 @@ function ScrollToTop() {
 export default function App() {
   return (
     <MarketplaceProvider>
+      <div className="bg-wash" aria-hidden="true" />
       <ScrollToTop />
       <Navbar />
       <main className="main">
