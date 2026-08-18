@@ -6,7 +6,11 @@
  * VITE_GENLAYER_RPC_URL  — optional RPC endpoint override.
  */
 
-export const CONTRACT_ADDRESS = (import.meta.env.VITE_CONTRACT_ADDRESS as string) || "";
+// The deployed AIMarketplace contract. VITE_CONTRACT_ADDRESS overrides it;
+// the fallback keeps the deployed StudioNet app working without env vars.
+export const CONTRACT_ADDRESS =
+  (import.meta.env.VITE_CONTRACT_ADDRESS as string) ||
+  "0x2A7f8995EAe909575787C14629ec924AE6D1ad7D";
 
 export const NETWORK = (import.meta.env.VITE_GENLAYER_NETWORK as string) || "studionet";
 
