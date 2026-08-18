@@ -47,7 +47,7 @@ export default function Logo({ size = 30, withWordmark = true }: LogoProps) {
       </svg>
       {withWordmark && (
         <span className="logo-word">
-          AI<span>Marketplace</span>
+          KA<span>VI</span>
         </span>
       )}
     </span>

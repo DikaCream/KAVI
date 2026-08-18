@@ -1,6 +1,8 @@
-# AI Marketplace
+# KAVI
 
-An **on-chain marketplace for AI skills** built on [GenLayer](https://genlayer.com). Creators list an AI skill — a title, description, category, price and a public URL hosting the skill content — and GenLayer's AI validators read every submission before it goes live. Buyers pay GEN into per-purchase escrow, and if a buyer believes a skill does not do what the listing promised, AI validators adjudicate the dispute and rule on a full, partial or no refund.
+> *kavi (Sanskrit) — poet, seer; one who reads and judges.*
+
+**KAVI** is an on-chain marketplace for AI agent skills — *the marketplace that reads what it sells* — built on [GenLayer](https://genlayer.com). Creators list an AI skill (a title, description, category, price and a public URL hosting the skill content) and GenLayer's AI validators read every submission before it goes live. Buyers pay GEN into per-purchase escrow, and if a buyer believes a skill does not do what the listing promised, AI validators adjudicate the dispute and rule on a full, partial or no refund.
 
 Unlike a normal deterministic smart contract, this is an **Intelligent Contract**: moderation and dispute resolution run through GenVM with live web access and LLM judgment, then settle on-chain through AI-validator consensus.
 

@@ -30,7 +30,7 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to="/" aria-label="AI Marketplace home">
+      <Link to="/" aria-label="KAVI home">
         <Logo />
       </Link>
 

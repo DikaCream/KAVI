@@ -38,7 +38,7 @@ export default function Architecture() {
         <span className="kicker">~/architecture · how consensus works</span>
         <h1 style={{ marginTop: 8 }}>Architecture</h1>
         <p className="muted">
-          How AI Marketplace uses GenLayer's AI-validator consensus instead of
+          How KAVI uses GenLayer's AI-validator consensus instead of
           trusting a single operator.
         </p>
       </div>
