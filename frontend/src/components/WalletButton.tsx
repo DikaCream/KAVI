@@ -1,5 +1,5 @@
 import { useMarketplace } from "../context/MarketplaceContext";
-import { formatAddress } from "../lib/client";
+import { formatAddress, formatGen } from "../lib/client";
 
 export default function WalletButton() {
   const { wallet } = useMarketplace();
@@ -7,7 +7,19 @@ export default function WalletButton() {
   if (wallet.address) {
     return (
       <div className="wallet-pill">
-        <span className="dot" />
+        <span
+          className={`net ${wallet.isRightNetwork ? "ok" : "bad"}`}
+          title={
+            wallet.isRightNetwork
+              ? "On GenLayer StudioNet"
+              : "Wrong network — switch to StudioNet"
+          }
+        >
+          {wallet.isRightNetwork ? "StudioNet" : "Wrong network"}
+        </span>
+        <span className="balance" title="GEN balance">
+          {formatGen(wallet.balance)}
+        </span>
         <span title={wallet.address}>{formatAddress(wallet.address)}</span>
         <button
           className="ghost small"
@@ -29,7 +41,7 @@ export default function WalletButton() {
         rel="noreferrer"
         style={{ fontSize: "0.85rem" }}
       >
-        Install MetaMask
+        Install a wallet
       </a>
     );
   }

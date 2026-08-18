@@ -219,6 +219,29 @@ code {
   background: var(--accent);
 }
 
+.wallet-pill .net {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+}
+
+.wallet-pill .net.ok {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.wallet-pill .net.bad {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.wallet-pill .balance {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
 /* ---------------------------------------------------------------- layout */
 .main {
   flex: 1;

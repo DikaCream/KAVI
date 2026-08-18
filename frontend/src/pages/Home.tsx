@@ -53,12 +53,17 @@ const STEPS = [
 export default function Home() {
   const { contract } = useMarketplace();
   const [config, setConfig] = useState<Config | null>(null);
+  const [liveSkills, setLiveSkills] = useState<number | null>(null);
 
   useEffect(() => {
     let alive = true;
     contract
       .getConfig()
       .then((c) => alive && setConfig(c))
+      .catch(() => {});
+    contract
+      .listSkills(0, 50)
+      .then((list) => alive && setLiveSkills(list.filter((s) => s.status === "ACTIVE").length))
       .catch(() => {});
     return () => {
       alive = false;
@@ -89,7 +94,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="stats-row">
-            <Stat value={config ? String(config.skill_count) : "–"} label="Skills listed" />
+            <Stat value={liveSkills != null ? String(liveSkills) : "–"} label="Live skills" />
             <Stat
               value={config ? formatGen(config.escrow_locked) : "–"}
               label="GEN in escrow"

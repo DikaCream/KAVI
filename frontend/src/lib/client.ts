@@ -43,8 +43,8 @@ export function getProvider(): EthereumProvider | null {
   return window.ethereum || null;
 }
 
-export function isMetaMaskInstalled(): boolean {
-  return !!getProvider()?.isMetaMask;
+export function hasEthereumProvider(): boolean {
+  return !!getProvider();
 }
 
 export async function requestAccounts(): Promise<string[]> {
@@ -62,6 +62,57 @@ export async function getAccounts(): Promise<string[]> {
   } catch {
     return [];
   }
+}
+
+/** Native GEN balance of an address, in wei. */
+export async function getBalance(address: string): Promise<bigint> {
+  const provider = getProvider();
+  if (!provider) return 0n;
+  try {
+    const result = await provider.request({
+      method: "eth_getBalance",
+      params: [address, "latest"],
+    });
+    return BigInt(result as string);
+  } catch {
+    return 0n;
+  }
+}
+
+export async function getChainId(): Promise<string | null> {
+  const provider = getProvider();
+  if (!provider) return null;
+  try {
+    return (await provider.request({ method: "eth_chainId" })) as string;
+  } catch {
+    return null;
+  }
+}
+
+/** Subscribe to wallet account changes. Returns an unsubscribe function. */
+export function onAccountsChanged(
+  handler: (accounts: string[]) => void,
+): () => void {
+  const provider = getProvider();
+  if (!provider?.on) return () => {};
+  provider.on("accountsChanged", handler as (...args: unknown[]) => void);
+  return () =>
+    provider.removeListener?.(
+      "accountsChanged",
+      handler as (...args: unknown[]) => void,
+    );
+}
+
+/** Subscribe to network changes. Returns an unsubscribe function. */
+export function onChainChanged(handler: (chainId: string) => void): () => void {
+  const provider = getProvider();
+  if (!provider?.on) return () => {};
+  provider.on("chainChanged", handler as (...args: unknown[]) => void);
+  return () =>
+    provider.removeListener?.(
+      "chainChanged",
+      handler as (...args: unknown[]) => void,
+    );
 }
 
 async function addStudionet(provider: EthereumProvider) {
