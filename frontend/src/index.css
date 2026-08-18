@@ -1247,6 +1247,32 @@ code,
   margin-bottom: 16px;
 }
 
+/* Rejected listing notice on the skill detail page. */
+.reject-banner {
+  border: 1px solid rgba(251, 113, 133, 0.5);
+  border-left: 4px solid var(--danger);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 14px 0;
+  color: var(--text);
+  background: rgba(251, 113, 133, 0.08);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.reject-banner strong {
+  color: var(--danger);
+}
+
+.connect-panel {
+  max-width: 560px;
+}
+
+.connect-panel .primary {
+  font-size: 0.95rem;
+  padding: 12px 22px;
+}
+
 .empty {
   color: var(--muted);
   padding: 56px 0;

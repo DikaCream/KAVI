@@ -46,8 +46,45 @@ export default function Dashboard() {
 
   if (!wallet.address) {
     return (
-      <div className="container page empty">
-        Connect your wallet to see your dashboard.
+      <div className="container page">
+        <div className="page-head">
+          <span className="kicker">~/dashboard · your activity</span>
+          <h1 style={{ marginTop: 8 }}>Dashboard</h1>
+          <p className="muted">
+            Your listings, sales, and escrow on-chain. Connect a wallet to
+            load your activity.
+          </p>
+        </div>
+
+        <div className="panel connect-panel">
+          <h2 style={{ margin: "0 0 6px" }}>Connect your wallet</h2>
+          <p className="muted" style={{ margin: "0 0 16px" }}>
+            You need a wallet on GenLayer StudioNet to see your listings,
+            purchases, and escrow balances.
+          </p>
+          {wallet.error && <div className="error-banner">{wallet.error}</div>}
+          {wallet.hasProvider ? (
+            <button
+              className="primary"
+              onClick={wallet.connect}
+              disabled={wallet.busy}
+            >
+              {wallet.busy ? "Connecting…" : "Connect wallet"}
+            </button>
+          ) : (
+            <p className="muted" style={{ margin: 0 }}>
+              No wallet detected.{" "}
+              <a
+                href="https://metamask.io/download/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Install MetaMask
+              </a>{" "}
+              to get started.
+            </p>
+          )}
+        </div>
       </div>
     );
   }

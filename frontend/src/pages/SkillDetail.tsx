@@ -77,6 +77,14 @@ export default function SkillDetail() {
           </span>
         </div>
 
+        {skill.status === "REJECTED" && (
+          <div className="reject-banner" role="alert">
+            <strong>Rejected by validators.</strong> This listing did not pass
+            AI moderation and is not available for purchase. See the review
+            below for the reason.
+          </div>
+        )}
+
         <p className="description">{skill.description}</p>
 
         <div className="review-box">
@@ -104,7 +112,11 @@ export default function SkillDetail() {
                 ? "Buying…"
                 : skill.status === "ACTIVE"
                   ? "Buy with escrow"
-                  : "Unavailable"}
+                  : skill.status === "PENDING_REVIEW"
+                    ? "Under review"
+                    : skill.status === "REJECTED"
+                      ? "Rejected"
+                      : "Unavailable"}
             </button>
           </div>
         </div>
