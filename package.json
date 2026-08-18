@@ -10,7 +10,5 @@
     "typecheck": "cd frontend && npm run typecheck",
     "deploy": "genlayer deploy"
   },
-  "devDependencies": {
-    "genlayer-js": "^1.1.8"
-  }
+  "devDependencies": {}
 }

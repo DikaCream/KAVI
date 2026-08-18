@@ -42,8 +42,6 @@ tests/
     test_ai_marketplace.py   # Real consensus against GenLayer Studio
     fixtures.py
 frontend/                    # Vite + React + TypeScript app (genlayer-js)
-deploy/
-  deployScript.ts            # CLI deployment script
 gltest.config.yaml           # Test-runner network config
 pyproject.toml               # pytest config
 .github/workflows/ci.yml     # Lint + direct-test CI
