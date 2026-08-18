@@ -1,7 +1,7 @@
 /**
  * Frontend configuration.
  *
- * VITE_CONTRACT_ADDRESS — the deployed AIMarketplace contract address.
+ * VITE_CONTRACT_ADDRESS — the deployed KAVI contract address.
  * VITE_GENLAYER_NETWORK  — studionet (default) | testnet-asimov | localnet.
  * VITE_GENLAYER_RPC_URL  — optional RPC endpoint override.
  */

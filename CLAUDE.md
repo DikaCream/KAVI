@@ -6,41 +6,55 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Linting
-genvm-lint check contracts/football_bets.py    # Lint a contract
+genvm-lint check contracts/ai_marketplace.py    # Lint the contract
 
 # Testing
-pytest tests/direct/ -v                        # Direct mode tests (fast, no Studio)
-gltest tests/integration/ -v -s                # Integration tests (requires Studio)
+pytest tests/direct/ -v                         # Direct mode tests (fast, no Studio)
+gltest tests/integration/ -v -s                 # Integration tests (requires Studio)
 
 # Deployment
-genlayer network                               # Select network
-genlayer deploy                                # Deploy contracts
+genlayer network set studionet                  # StudioNet is gasless
+genlayer deploy --contract contracts/ai_marketplace.py
 
 # Frontend
-cd frontend && npm run dev                     # Start frontend dev server
+cd frontend && npm run dev                      # Start frontend dev server (Vite)
+cd frontend && npm run build                    # Production build
+cd frontend && npx tsc --noEmit                 # Typecheck
 ```
 
 ## Architecture
 
 ```
-contracts/          # Python intelligent contracts
+contracts/
+  ai_marketplace.py        # The Intelligent Contract (AIMarketplace)
 tests/
-  direct/           # Fast in-memory tests with web/LLM mocks
-  integration/      # Full tests against GenLayer Studio
-frontend/           # Next.js 15 app (TypeScript, TanStack Query, Radix UI)
-deploy/             # TypeScript deployment scripts
+  direct/                  # Fast in-memory tests with web/LLM mocks
+  integration/             # Full consensus tests against GenLayer Studio
+frontend/                  # Vite + React + TypeScript app (genlayer-js)
+deploy/
+  deployScript.ts          # TypeScript deployment script
+design-system/             # Persisted ui-ux-pro-max design tokens (MASTER.md)
 ```
 
-**Frontend stack**: Next.js 15, React 19, TypeScript, Tailwind CSS, TanStack Query, Wagmi/Viem, MetaMask wallet integration.
+**Frontend stack**: Vite 5, React 19, TypeScript, React Router, genlayer-js (`createClient`, `readContract`, `writeContract`, `waitForTransactionReceipt`), MetaMask wallet injection. Styling is plain CSS with design tokens in `frontend/src/index.css`.
 
 ## Development Workflow
 
-1. Write/modify contract in `contracts/`
-2. Lint: `genvm-lint check contracts/your_contract.py`
+1. Write/modify the contract in `contracts/ai_marketplace.py`
+2. Lint: `genvm-lint check contracts/ai_marketplace.py`
 3. Test direct: `pytest tests/direct/ -v`
-4. Start Studio and deploy: `genlayer deploy`
+4. Deploy: `genlayer deploy --contract contracts/ai_marketplace.py` (set network first)
 5. Test integration: `gltest tests/integration/ -v -s`
 6. Run frontend: `cd frontend && npm run dev`
+
+## Frontend Patterns
+
+- Contract interactions: `frontend/src/lib/contract.ts` (typed `Marketplace` wrapper)
+- GenLayer client: `frontend/src/lib/client.ts` (`createMarketplaceClient`, `parseGen`, `formatGen`)
+- Wallet state: `frontend/src/hooks/useWallet.ts` + `frontend/src/context/MarketplaceContext.tsx`
+- Contract address / network: `frontend/src/config.ts` (env overrides with hardcoded StudioNet fallback)
+
+The deployed StudioNet contract address is `0x2A7f8995EAe909575787C14629ec924AE6D1ad7D`. Reads work without a wallet; writes require connecting MetaMask and switching to the GenLayer Studio network (chain id 61999).
 
 ## Contract Development
 
@@ -73,11 +87,11 @@ class MyContract(gl.Contract):
 
 ## Writing Direct Mode Tests
 
-Direct mode runs contracts in-memory without Studio. Key APIs:
+Direct mode runs contracts in-memory without Studio. Key APIs (fixtures live in `tests/direct/conftest.py`):
 
 ```python
 def test_example(direct_vm, direct_deploy, direct_alice):
-    contract = direct_deploy("contracts/my_contract.py")
+    contract = direct_deploy("contracts/ai_marketplace.py")
 
     # Set sender
     direct_vm.sender = direct_alice
@@ -111,13 +125,6 @@ The GenVM linter catches contract issues before deployment:
 - Missing decorators and return type annotations
 - Bare Python exceptions (must use `gl.vm.UserError` or `Exception`)
 
-## Frontend Patterns
-
-- Contract interactions: `frontend/lib/contracts/FootballBets.ts`
-- React hooks: `frontend/lib/hooks/useFootballBets.ts`
-- Wallet context: `frontend/lib/genlayer/WalletProvider.tsx`
-- GenLayer client: `frontend/lib/genlayer/client.ts`
-
 ## AI Agent Skills
 
 Install the GenLayer development skills for enhanced agent-assisted workflows:
@@ -128,7 +135,7 @@ Install the GenLayer development skills for enhanced agent-assisted workflows:
 /plugin install genlayer-dev@genlayerlabs
 ```
 
-Skills available: `genvm-lint` (linting), `direct-tests` (direct mode testing), `integration-tests` (integration testing).
+Skills available: `genvm-lint` (linting), `direct-tests` (direct mode testing), `integration-tests` (integration testing). The project also pins `ui-ux-pro-max` (see `skills-lock.json`) for frontend design work.
 
 ---
 

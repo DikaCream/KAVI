@@ -6,6 +6,12 @@
 
 Unlike a normal deterministic smart contract, this is an **Intelligent Contract**: moderation and dispute resolution run through GenVM with live web access and LLM judgment, then settle on-chain through AI-validator consensus.
 
+## Live demo
+
+- **App:** https://a-imarketplace-frontend.vercel.app/ (Vite + React frontend, deployed on Vercel)
+- **Contract (StudioNet):** `0x2A7f8995EAe909575787C14629ec924AE6D1ad7D` on the [GenLayer Studio explorer](https://explorer-studio.genlayer.com/address/0x2A7f8995EAe909575787C14629ec924AE6D1ad7D)
+- The catalog is live: 7 approved agent skills (Frontend Design, DOCX generation, Vercel React Best Practices, PPT generation, and more) were submitted on-chain and approved by the AI validators.
+
 ## Features
 
 | Feature | How it works |
