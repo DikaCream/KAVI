@@ -8,15 +8,21 @@
 
 // The deployed AIMarketplace contract. VITE_CONTRACT_ADDRESS overrides it;
 // the fallback keeps the deployed StudioNet app working without env vars.
-export const CONTRACT_ADDRESS =
-  (import.meta.env.VITE_CONTRACT_ADDRESS as string) ||
-  "0x2A7f8995EAe909575787C14629ec924AE6D1ad7D";
+// Env values are trimmed: a trailing space pasted into the Vercel env var
+// would otherwise make the RPC reject the address as malformed.
+function env(name: string, fallback: string): string {
+  const value = import.meta.env[name] as string | undefined;
+  return (value && value.trim()) || fallback;
+}
 
-export const NETWORK = (import.meta.env.VITE_GENLAYER_NETWORK as string) || "studionet";
+export const CONTRACT_ADDRESS = env(
+  "VITE_CONTRACT_ADDRESS",
+  "0x2A7f8995EAe909575787C14629ec924AE6D1ad7D",
+);
 
-export const RPC_URL =
-  (import.meta.env.VITE_GENLAYER_RPC_URL as string) ||
-  "https://studio.genlayer.com/api";
+export const NETWORK = env("VITE_GENLAYER_NETWORK", "studionet");
+
+export const RPC_URL = env("VITE_GENLAYER_RPC_URL", "https://studio.genlayer.com/api");
 
 /** Chain id of studionet, used to add/switch the network in the wallet. */
 export const STUDIONET_CHAIN_ID = 61999;
