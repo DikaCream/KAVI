@@ -65,6 +65,9 @@ MAX_DISPUTE_ATTEMPTS = 5
 # Input bounds (see each method for why)
 MAX_URL_CHARS = 500
 MAX_CONTENT_CHARS = 8000
+# Price cap: listings cost 0-100 GEN (wei units, 10**18 wei per GEN).
+GEN_ONE = 10**18
+MAX_PRICE_GEN = 100
 
 # ---------------------------------------------------------------- untrusted input
 
@@ -375,6 +378,8 @@ class AIMarketplace(gl.Contract):
             raise gl.vm.UserError("category must be 3-40 characters")
         if int(price) <= 0:
             raise gl.vm.UserError("price must be positive")
+        if int(price) > MAX_PRICE_GEN * GEN_ONE:
+            raise gl.vm.UserError("price must be 100 GEN or less")
         # The URL validators will fetch at moderation time — nothing that
         # cannot be a public https URL ever reaches storage.
         if not _is_fetchable_content_url(content_url):

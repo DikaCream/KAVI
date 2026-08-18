@@ -36,6 +36,7 @@ function validateField(
     case "price":
       if (!/^\d+(\.\d+)?$/.test(v)) return "Price must be a positive number, e.g. 25 or 12.5.";
       if (Number(v) <= 0) return "Price must be greater than zero.";
+      if (Number(v) > 100) return "Price must be 100 GEN or less.";
       return undefined;
     case "contentUrl":
       if (!/^https:\/\//i.test(v))
@@ -224,7 +225,7 @@ export default function ListSkill() {
             )}
           </label>
           <label htmlFor="price">
-            Price (GEN)
+            Price (GEN, up to 100)
             <input
               id="price"
               value={price}
@@ -232,7 +233,8 @@ export default function ListSkill() {
               onBlur={(e) => handleBlur("price", e.target.value)}
               required
               inputMode="decimal"
-              placeholder="e.g. 50"
+              max={100}
+              placeholder="e.g. 50 (max 100)"
               aria-invalid={errors.price ? true : undefined}
               aria-describedby={errors.price ? "price-error" : undefined}
             />
@@ -291,6 +293,7 @@ export default function ListSkill() {
           <p className="muted" style={{ fontSize: "0.85rem" }}>
             Your content URL must be a public <code>https://</code> address.
             Local, private, or metadata hosts are rejected for security.
+            Prices are capped at 100 GEN.
           </p>
         </aside>
       </div>

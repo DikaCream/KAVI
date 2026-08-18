@@ -146,6 +146,25 @@ def test_submit_validates_price(direct_vm, direct_deploy, direct_alice):
         contract.submit_skill("Valid", GOOD_DESCRIPTION, "automation", 0, GOOD_URL)
 
 
+def test_submit_validates_price_max(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/ai_marketplace.py")
+    direct_vm.sender = direct_alice
+    # Exactly 100 GEN is allowed (100 * 10**18 wei)…
+    sid = int(
+        contract.submit_skill(
+            "Valid", GOOD_DESCRIPTION, "automation", 100 * 10**18, GOOD_URL
+        )
+    )
+    assert contract.get_skill(sid)["price"] == 100 * 10**18
+    # …but anything above is rejected. Advance time first: submits are
+    # throttled by a cooldown, not by the price cap.
+    set_time("2030-01-01T00:05:00Z")
+    with direct_vm.expect_revert("price must be 100 GEN or less"):
+        contract.submit_skill(
+            "Valid", GOOD_DESCRIPTION, "automation", 100 * 10**18 + 1, GOOD_URL
+        )
+
+
 def test_creator_index(direct_vm, direct_deploy, direct_alice):
     contract = direct_deploy("contracts/ai_marketplace.py")
     submit_approved_skill(contract, direct_vm, direct_alice, title="First Skill")
