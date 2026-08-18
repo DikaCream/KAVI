@@ -128,7 +128,7 @@ export default function Home() {
         <div className="container">
           <span className="eyebrow">
             <span className="pulse" />
-            ~/manifesto · estás aquí
+            ~/manifesto · you are here
           </span>
           <h1>
             The marketplace that
@@ -160,7 +160,7 @@ export default function Home() {
 
       <section className="container section">
         <ScrollReveal>
-          <span className="kicker">site map · estás aquí</span>
+          <span className="kicker">site map · you are here</span>
           <h2 className="section-title" style={{ marginTop: 10 }}>
             Choose a region
           </h2>

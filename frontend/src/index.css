@@ -247,7 +247,7 @@ code,
 }
 
 .logo-word span {
-  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--violet));
+  background: linear-gradient(90deg, #a78bfa, #34d399);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
