@@ -18,9 +18,10 @@ Unlike a normal deterministic smart contract, this is an **Intelligent Contract*
 |---|---|
 | **Listing moderation** | Validators fetch the hosted content, compare it to the listing, reject spam/malware/prompt-injection, and attach a quality score from 0 to 100 before the skill goes live. |
 | **Quality scoring** | Every approved listing carries a consensus score from 0 to 100, surfaced in the UI. |
-| **Content fetch/verify** | `gl.nondet.web.render` fetches the listing's URL; SSRF is blocked by strict public-https URL validation. |
+| **Immutable content version** | On approval a second consensus round pins the exact content validators read (snapshot + Keccak-256 hash) on-chain. The URL is never trusted after that. |
+| **Verified purchases** | Before escrowing, `purchase_skill` re-fetches the URL under consensus and requires the hash to still match the approved version, so buyers receive exactly the artifact that was approved. |
 | **Escrow purchases** | Buyers pay the exact price; funds are held per-purchase until released or a dispute resolves. |
-| **Dispute adjudication** | Validators compare the listing against the actual content and the buyer's complaint, then rule `NO_REFUND` / `PARTIAL_REFUND` / `FULL_REFUND`. |
+| **Dispute adjudication** | Validators judge the committed content version plus authenticated on-chain evidence from both parties (never a live re-fetch of the creator-controlled URL), then rule `NO_REFUND` / `PARTIAL_REFUND` / `FULL_REFUND`. |
 
 Every non-deterministic step (moderation and adjudication) runs under an explicit [`prompt_comparative`](https://docs.genlayer.com) equivalence principle, so honest validators that read the same content but phrase their verdict differently still reach consensus.
 
@@ -35,6 +36,7 @@ tests/
     test_submit_moderation.py
     test_purchase_release.py
     test_dispute.py
+    test_content_version.py   # Immutable content versions + evidence
     test_views.py
     test_url_rules.py        # SSRF / URL validation
     test_smoke.py            # End-to-end happy path
@@ -115,11 +117,13 @@ Set `VITE_GENLAYER_NETWORK=studionet` (default) or `testnet-asimov`, and `VITE_G
 ## How the contract works
 
 1. **Submit.** A creator calls `submit_skill(title, description, category, price, content_url)`. The URL must be a public `https://` URL (SSRF-safe: no localhost/private/metadata hosts, default port only). The skill starts `PENDING_REVIEW`.
-2. **Moderation.** `submit_skill` immediately runs moderation. Validators fetch the content, then an LLM returns `{verdict, score, reason}` JSON under an equivalence principle. `APPROVE` → `ACTIVE` with the score; `REJECT` → `REJECTED`; unparseable output fails closed and leaves it `PENDING_REVIEW` (creator can `retry_moderation`).
-3. **Purchase.** `purchase_skill(skill_id)` is `payable` and requires the exact price. Funds move into per-purchase escrow and the contract tracks `escrow_locked` so it always equals the sum of open escrows.
-4. **Release or dispute.** Before the 7-day window closes only the buyer may release early; after it anyone may release to the creator. The buyer may instead `file_dispute(purchase_id, reason)` within the window.
-5. **Adjudication.** Validators compare the listing against the content and the complaint, returning `{refund_pct, reason}` under an equivalence principle. The dispute becomes `RESOLVED` with an outcome.
-6. **Settle.** `settle_dispute` is permissionless and applies the outcome: `FULL_REFUND` / `PARTIAL_REFUND` back to the buyer, or `NO_REFUND` releasing to the creator. An unresolved dispute can be `close_stale_dispute`d after the stale window (fails closed back to the buyer).
+2. **Moderation.** `submit_skill` immediately runs moderation. Validators fetch the content, then an LLM returns `{verdict, score, reason}` JSON under an equivalence principle. `REJECT` → `REJECTED`; unparseable output fails closed and leaves it `PENDING_REVIEW` (creator can `retry_moderation`).
+3. **Commit.** On `APPROVE`, a second consensus round pins the immutable content version: the exact text validators read (`content_snapshot`) plus its Keccak-256 hash (`content_hash`), agreed byte-for-byte under a hash-equality equivalence principle. A skill goes `ACTIVE` only if that version was committed.
+4. **Purchase.** `purchase_skill(skill_id)` is `payable` and requires the exact price. It re-fetches the URL under consensus and only escrows if the hash still matches the committed version; a drifted creator-controlled URL blocks the purchase. The purchase is recorded against that `content_hash`. Funds move into per-purchase escrow and the contract tracks `escrow_locked` so it always equals the sum of open escrows.
+5. **Release or dispute.** Before the 7-day window closes only the buyer may release early; after it anyone may release to the creator. The buyer may instead `file_dispute(purchase_id, reason)` within the window.
+6. **Evidence.** While a dispute is open, both the buyer and the creator can call `submit_dispute_evidence(dispute_id, evidence)` once each. The evidence is stored on-chain and authenticated by the submitting wallet.
+7. **Adjudication.** Validators judge the committed content version (stored snapshot, never a live re-fetch) plus the buyer's complaint and both parties' evidence, returning `{refund_pct, reason}` under an equivalence principle. The dispute becomes `RESOLVED` with an outcome.
+8. **Settle.** `settle_dispute` is permissionless and applies the outcome: `FULL_REFUND` / `PARTIAL_REFUND` back to the buyer, or `NO_REFUND` releasing to the creator. An unresolved dispute can be `close_stale_dispute`d after the stale window (fails closed back to the buyer).
 
 ### Equivalence principles
 
@@ -127,11 +131,12 @@ Because two validators will not word an LLM verdict identically, the contract co
 
 - **Moderation:** equivalent iff verdicts match exactly and scores fall in the same bucket of ten; reasons may differ in wording.
 - **Adjudication:** equivalent iff both refund percentages are zero or both non-zero, and fall in the same bucket of ten.
+- **Content version (commit & purchase check):** byte-exact — equivalent iff the Keccak-256 `content_hash` strings are exactly equal.
 
 ### Defensive LLM handling
 
 - Both leader functions request strict JSON and sanitize/validate types, clamp scores, and classify unparseable output with a deterministic error sentinel.
-- Untrusted text (title, description, category, reason, fetched content) is neutralized against prompt-structure markers and fenced as data so a hostile listing cannot inject instructions into the moderator or arbitrator.
+- Untrusted text (title, description, category, reason, evidence, fetched content) is neutralized against prompt-structure markers and fenced as data so a hostile listing cannot inject instructions into the moderator or arbitrator.
 
 ## Testing strategy
 

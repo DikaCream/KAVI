@@ -90,6 +90,14 @@ export default function SkillDetail() {
         <div className="review-box">
           <strong>AI moderation review</strong>
           <p className="muted">{skill.review_summary || "No review available."}</p>
+          {skill.status === "ACTIVE" && skill.content_hash && (
+            <p className="muted" style={{ fontSize: "0.8rem", marginTop: 8 }}>
+              Content pinned by validators at approval · v1{" "}
+              <code style={{ fontSize: "0.75rem" }}>
+                {skill.content_hash.slice(0, 16)}…
+              </code>
+            </p>
+          )}
         </div>
 
         <div className="row detail-actions">
@@ -98,6 +106,12 @@ export default function SkillDetail() {
               Price (escrowed on purchase)
             </div>
             <strong className="price big">{formatGen(skill.price)}</strong>
+            {skill.status === "ACTIVE" && (
+              <div className="muted" style={{ fontSize: "0.75rem" }}>
+                Purchase is verified against the exact content version the
+                validators approved.
+              </div>
+            )}
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <a href={skill.content_url} target="_blank" rel="noreferrer">

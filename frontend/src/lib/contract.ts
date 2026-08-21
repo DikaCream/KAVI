@@ -29,6 +29,8 @@ function toSkill(v: any): Skill {
     category: String(o.category ?? ""),
     price: toBigInt(o.price),
     content_url: String(o.content_url ?? ""),
+    content_snapshot: String(o.content_snapshot ?? ""),
+    content_hash: String(o.content_hash ?? ""),
     status: String(o.status) as Skill["status"],
     score: toInt(o.score),
     review_summary: String(o.review_summary ?? ""),
@@ -49,6 +51,7 @@ function toPurchase(v: any): Purchase {
     skill_id: toInt(o.skill_id),
     buyer: String(o.buyer ?? ""),
     price: toBigInt(o.price),
+    content_hash: String(o.content_hash ?? ""),
     status: String(o.status) as Purchase["status"],
     dispute_id: toInt(o.dispute_id),
     purchased_at: toInt(o.purchased_at),
@@ -63,6 +66,8 @@ function toDispute(v: any): Dispute {
     purchase_id: toInt(o.purchase_id),
     buyer: String(o.buyer ?? ""),
     reason: String(o.reason ?? ""),
+    buyer_evidence: String(o.buyer_evidence ?? ""),
+    creator_evidence: String(o.creator_evidence ?? ""),
     status: String(o.status) as Dispute["status"],
     outcome: String(o.outcome ?? "") as Dispute["outcome"],
     refund_pct: toInt(o.refund_pct),
@@ -166,6 +171,11 @@ export class Marketplace {
     return Array.isArray(v) ? v.map(toPurchase) : [];
   }
 
+  async listSkillPurchases(skillId: number, offset = 0, limit = 50): Promise<Purchase[]> {
+    const v = await this.read("list_skill_purchases", [skillId, offset, limit]);
+    return Array.isArray(v) ? v.map(toPurchase) : [];
+  }
+
   // ---- writes ---------------------------------------------------------
   async submitSkill(
     title: string,
@@ -201,6 +211,10 @@ export class Marketplace {
 
   async withdrawDispute(disputeId: number) {
     return this.write("withdraw_dispute", [disputeId]);
+  }
+
+  async submitDisputeEvidence(disputeId: number, evidence: string) {
+    return this.write("submit_dispute_evidence", [disputeId, evidence]);
   }
 
   async settleDispute(disputeId: number) {

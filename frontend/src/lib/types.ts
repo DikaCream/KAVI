@@ -20,6 +20,8 @@ export interface Skill {
   category: string;
   price: bigint; // wei
   content_url: string;
+  content_snapshot: string; // immutable text pinned by validators at approval
+  content_hash: string; // keccak-256 hex of content_snapshot
   status: SkillStatus;
   score: number;
   review_summary: string;
@@ -37,6 +39,7 @@ export interface Purchase {
   skill_id: number;
   buyer: string;
   price: bigint; // wei
+  content_hash: string; // the immutable content version this purchase is bound to
   status: PurchaseStatus;
   dispute_id: number;
   purchased_at: number;
@@ -48,6 +51,8 @@ export interface Dispute {
   purchase_id: number;
   buyer: string;
   reason: string;
+  buyer_evidence: string; // on-chain evidence submitted by the buyer
+  creator_evidence: string; // on-chain evidence submitted by the creator
   status: DisputeStatus;
   outcome: DisputeOutcome;
   refund_pct: number;

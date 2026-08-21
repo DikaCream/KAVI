@@ -1,14 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import EvidenceForm from "../components/EvidenceForm";
 import StatusBadge from "../components/StatusBadge";
 import { useMarketplace } from "../context/MarketplaceContext";
 import { formatGen } from "../lib/client";
 import type { Dispute, Purchase, Skill } from "../lib/types";
 
+interface CreatorDispute {
+  skill: Skill;
+  purchase: Purchase;
+  dispute: Dispute;
+}
+
 export default function Dashboard() {
   const { contract, wallet } = useMarketplace();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [creatorDisputes, setCreatorDisputes] = useState<CreatorDispute[]>([]);
   const [tick, setTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,6 +24,7 @@ export default function Dashboard() {
     if (!wallet.address) {
       setSkills([]);
       setPurchases([]);
+      setCreatorDisputes([]);
       return;
     }
     try {
@@ -25,6 +34,18 @@ export default function Dashboard() {
       ]);
       setSkills(s);
       setPurchases(p);
+      // Disputes on the creator's skills, so creators can submit evidence.
+      const rows: CreatorDispute[] = [];
+      for (const sk of s) {
+        if (sk.disputes <= 0) continue;
+        const ps = await contract.listSkillPurchases(sk.id, 0, 50);
+        for (const pc of ps) {
+          if (!pc.dispute_id) continue;
+          const d = await contract.getDispute(pc.dispute_id);
+          if (d) rows.push({ skill: sk, purchase: pc, dispute: d });
+        }
+      }
+      setCreatorDisputes(rows);
     } catch {
       setError("Could not load your dashboard data.");
     }
@@ -162,6 +183,65 @@ export default function Dashboard() {
           ))}
         </div>
       )}
+
+      <h2 className="section-title">Disputes on my skills</h2>
+      {creatorDisputes.length === 0 ? (
+        <div className="panel muted">
+          No disputes on your skills right now.
+        </div>
+      ) : (
+        <div className="stack">
+          {creatorDisputes.map((cd) => (
+            <div className="card purchase-card" key={cd.dispute.id}>
+              <div className="row">
+                <div>
+                  <strong>Dispute #{cd.dispute.id}</strong>
+                  <span
+                    className="muted"
+                    style={{ marginLeft: 8, fontSize: "0.8rem" }}
+                  >
+                    on “{cd.skill.title}” · purchase #{cd.purchase.id} ·{" "}
+                    {formatGen(cd.purchase.price)}
+                  </span>
+                </div>
+                <StatusBadge status={cd.dispute.status} />
+              </div>
+              <p
+                className="muted"
+                style={{ fontSize: "0.85rem", margin: "8px 0 0" }}
+              >
+                Buyer's complaint: “{cd.dispute.reason}”
+              </p>
+              {cd.dispute.status === "OPEN" ? (
+                <div style={{ marginTop: 10 }}>
+                  <EvidenceForm
+                    dispute={cd.dispute}
+                    role="creator"
+                    contract={contract}
+                    onSubmitted={() => setTick((t) => t + 1)}
+                  />
+                </div>
+              ) : (
+                cd.dispute.status === "RESOLVED" && (
+                  <div
+                    className="muted"
+                    style={{ fontSize: "0.85rem", marginTop: 8 }}
+                  >
+                    Outcome:{" "}
+                    <strong>
+                      {cd.dispute.outcome.replace(/_/g, " ")}
+                    </strong>{" "}
+                    ({cd.dispute.refund_pct}%)
+                    {cd.dispute.verdict_reason && (
+                      <> — “{cd.dispute.verdict_reason}”</>
+                    )}
+                  </div>
+                )
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -188,12 +268,13 @@ function PurchaseRow({
   const [reason, setReason] = useState("");
   const [filing, setFiling] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [disputeTick, setDisputeTick] = useState(0);
 
   useEffect(() => {
     if (p.dispute_id) {
       contract.getDispute(p.dispute_id).then(setDispute).catch(() => {});
     }
-  }, [p.dispute_id, contract]);
+  }, [p.dispute_id, contract, disputeTick]);
 
   const run = async (key: string, fn: () => Promise<string>) => {
     setBusy(key);
@@ -279,6 +360,16 @@ function PurchaseRow({
             <strong>Dispute #{dispute.id}</strong>
             <StatusBadge status={dispute.status} />
           </div>
+          {dispute.status === "OPEN" && (
+            <div style={{ marginTop: 10 }}>
+              <EvidenceForm
+                dispute={dispute}
+                role="buyer"
+                contract={contract}
+                onSubmitted={() => setDisputeTick((t) => t + 1)}
+              />
+            </div>
+          )}
           {dispute.outcome ? (
             <>
               <div className="muted">

@@ -60,9 +60,13 @@ def _reset():
 
 GOOD_URL = "https://example.com/skill"
 GOOD_DESCRIPTION = "A well-described skill that fetches web pages and returns structured JSON data."
+# The content body every mock serves. Moderation pins it as the immutable
+# content version, the purchase drift-check must still see it, and disputes
+# adjudicate the pinned snapshot.
+CONTENT_BODY = "Skill content: does the job."
 
 
-def mock_moderation(vm, verdict="APPROVE", score=85, reason="Matches the description.", body="Skill content: does the job."):
+def mock_moderation(vm, verdict="APPROVE", score=85, reason="Matches the description.", body=CONTENT_BODY):
     vm.mock_web(r".*example\.com.*", {"status": 200, "body": body})
     vm.mock_llm(
         r".*moderator.*",
@@ -71,7 +75,8 @@ def mock_moderation(vm, verdict="APPROVE", score=85, reason="Matches the descrip
 
 
 def mock_adjudication(vm, refund_pct=0, reason="Skill works as described."):
-    vm.mock_web(r".*example\.com.*", {"status": 200, "body": "Skill content: does the job."})
+    # Adjudication reads the committed content snapshot stored on-chain; it no
+    # longer fetches the (mutable) URL, so only the LLM verdict is mocked.
     vm.mock_llm(
         r".*arbitrator.*",
         json.dumps({"refund_pct": refund_pct, "reason": reason}),
@@ -90,10 +95,16 @@ def submit_approved_skill(
     return sid
 
 
-def purchase(contract, vm, buyer, skill_id, price=100):
-    """Buyer pays exact price into escrow; returns the purchase id."""
+def purchase(contract, vm, buyer, skill_id, price=100, body=CONTENT_BODY):
+    """Buyer pays exact price into escrow; returns the purchase id.
+
+    purchase_skill re-verifies under consensus that the URL still serves the
+    content version approved at moderation, so the same body must be mocked.
+    """
     vm.sender = buyer
     vm.value = price
+    vm.mock_web(r".*example\.com.*", {"status": 200, "body": body})
     pid = int(contract.purchase_skill(skill_id))
+    vm.clear_mocks()
     vm.value = 0
     return pid

@@ -20,6 +20,22 @@ ESCROW INVARIANT (must hold after every method, on every path):
 It is tracked incrementally (+price on buy, -price on release/refund/settle)
 and never recomputed by looping, so it can never drift from the value the
 contract actually holds.
+
+CONTENT VERSIONING INVARIANT (must hold for every ACTIVE skill and every
+purchase, on every path):
+    - Moderation commits an immutable content version. When validators approve
+      a listing, a second consensus round fetches the URL and pins the exact
+      text validators read (content_snapshot) plus its Keccak-256 hash
+      (content_hash), agreed byte-for-byte by the equivalence principle. A
+      skill is ACTIVE only if that version was committed.
+    - Purchase verifies the version. purchase_skill re-fetches the URL under
+      consensus and requires the hash to still equal the committed
+      content_hash; the buyer therefore receives exactly the artifact that was
+      approved, and a drifted creator-controlled URL blocks the purchase.
+    - Disputes adjudicate the committed version. The arbitrator is given
+      content_snapshot/content_hash — never a live re-fetch of the mutable
+      URL — plus authenticated evidence each party submitted on-chain via
+      submit_dispute_evidence (evidence is bound to the submitting wallet).
 """
 from genlayer import *
 from dataclasses import dataclass
@@ -65,6 +81,9 @@ MAX_DISPUTE_ATTEMPTS = 5
 # Input bounds (see each method for why)
 MAX_URL_CHARS = 500
 MAX_CONTENT_CHARS = 8000
+# Evidence submitted by dispute parties (submit_dispute_evidence)
+MIN_EVIDENCE_CHARS = 20
+MAX_EVIDENCE_CHARS = 3000
 # Price cap: listings cost 0-100 GEN (wei units, 10**18 wei per GEN).
 GEN_ONE = 10**18
 MAX_PRICE_GEN = 100
@@ -184,6 +203,26 @@ def _neutralize_markers(text: str) -> str:
     return out
 
 
+def _fetch_content_snapshot(url: str):
+    """Fetch a URL exactly as validators will read it, and hash it.
+
+    Returns ``(snapshot, keccak256_hex)`` where snapshot is the text-mode
+    content truncated to MAX_CONTENT_CHARS and neutralized (the exact string
+    that is stored on-chain and later embedded in prompts), or ``None`` when
+    the fetch fails. MUST only be called inside a ``gl.eq_principle`` closure:
+    ``gl.nondet.web.render`` is only available in nondeterministic context.
+    """
+    try:
+        content = gl.nondet.web.render(url, mode="text")
+    except Exception:
+        return None
+    content = content[:MAX_CONTENT_CHARS]
+    snapshot = _neutralize_markers(content)
+    hasher = Keccak256()
+    hasher.update(snapshot.encode("utf-8"))
+    return snapshot, hasher.hexdigest()
+
+
 # ---------------------------------------------------------------- payouts
 @gl.evm.contract_interface
 class _NativeRecipient:
@@ -213,6 +252,8 @@ class Skill:
     category: str
     price: u256  # GEN a buyer must escrow to purchase
     content_url: str  # public https URL hosting the skill content
+    content_snapshot: str  # immutable text pinned by consensus at approval
+    content_hash: str  # keccak-256 hex of content_snapshot, agreed byte-for-byte
     status: str  # PENDING_REVIEW | ACTIVE | REJECTED
     score: u8  # 0-100 quality score from moderation
     review_summary: str
@@ -232,6 +273,7 @@ class Purchase:
     skill_id: u256
     buyer: Address
     price: u256
+    content_hash: str  # the immutable content version this purchase is bound to
     status: str  # ESCROWED | RELEASED | REFUNDED | DISPUTED
     dispute_id: u256  # 0 = never disputed (one dispute per purchase)
     purchased_at: u256
@@ -245,6 +287,8 @@ class Dispute:
     purchase_id: u256
     buyer: Address
     reason: str
+    buyer_evidence: str  # authenticated evidence submitted by the buyer
+    creator_evidence: str  # authenticated evidence submitted by the creator
     status: str  # OPEN | RESOLVED | WITHDRAWN
     outcome: str  # "" | NO_REFUND | PARTIAL_REFUND | FULL_REFUND
     refund_pct: u8  # 0-100, set by consensus
@@ -295,6 +339,12 @@ class DisputeJudgmentFailed(gl.Event):
     def __init__(self, dispute_id: u256, /): ...
 
 
+class EvidenceSubmitted(gl.Event):
+    """A dispute party attached authenticated on-chain evidence."""
+
+    def __init__(self, dispute_id: u256, /, **blob): ...
+
+
 # ---------------------------------------------------------------- contract
 class AIMarketplace(gl.Contract):
     skills: TreeMap[u256, Skill]
@@ -317,6 +367,53 @@ class AIMarketplace(gl.Contract):
         self.escrow_locked = u256(0)
 
     # ------------------------------------------------------------ helpers
+    def _commit_content_version(
+        self, url: str, expected_hash: str | None = None
+    ):
+        """Consensus-pin the URL's current content to an immutable version.
+
+        Validators each fetch the URL and return ``{content, content_hash}``.
+        The equivalence principle is byte-exact on the hash: an immutable
+        content version exists only if every validator computes the same
+        digest of the same text. When ``expected_hash`` is given (purchase
+        time), the URL must still serve the version approved at moderation;
+        a mismatch means the creator changed the content and the caller fails
+        closed instead of selling an unverified artifact.
+
+        Returns ``(snapshot, digest)`` on agreement, ``None`` on any failure
+        (unfetchable URL, unusable result, or hash drift).
+        """
+
+        def do_fetch() -> str:
+            out = _fetch_content_snapshot(url)
+            if out is None:
+                return json.dumps({"error": "content unavailable"})
+            snapshot, digest = out
+            return json.dumps(
+                {"content": snapshot, "content_hash": digest}, sort_keys=True
+            )
+
+        principle = (
+            "Both answers are JSON content commitments. They are equivalent if "
+            'and only if their "content_hash" strings are exactly equal. If '
+            'either answer contains an "error" key, they are equivalent only '
+            'if both contain an "error" key.'
+        )
+        try:
+            result_raw = gl.eq_principle.prompt_comparative(do_fetch, principle)
+            result = json.loads(result_raw)
+            if "error" in result:
+                return None
+            snapshot = str(result.get("content", ""))
+            digest = str(result.get("content_hash", ""))
+        except Exception:
+            return None
+        if expected_hash is not None and digest != expected_hash:
+            return None
+        if not snapshot or len(digest) != 64:  # keccak-256 hex
+            return None
+        return snapshot, digest
+
     def _now(self) -> int:
         raw = gl.message_raw.get("datetime")
         if not raw:
@@ -396,6 +493,8 @@ class AIMarketplace(gl.Contract):
             category=category,
             price=u256(int(price)),
             content_url=content_url,
+            content_snapshot="",
+            content_hash="",
             status=PENDING_REVIEW,
             score=u8(0),
             review_summary="",
@@ -442,6 +541,20 @@ class AIMarketplace(gl.Contract):
         value = int(gl.message.value)
         if value != int(s.price):
             raise gl.vm.UserError("exact skill price must be sent")
+        # The buyer must receive the exact artifact that was approved, so the
+        # URL is re-fetched under consensus and must still hash to the version
+        # committed at moderation. If the creator changed the content, the
+        # purchase fails closed instead of selling an unverified artifact.
+        if not s.content_hash:
+            raise gl.vm.UserError("skill has no committed content version")
+        if (
+            self._commit_content_version(s.content_url, expected_hash=s.content_hash)
+            is None
+        ):
+            raise gl.vm.UserError(
+                "skill content has changed since approval — purchase blocked; "
+                "ask the creator to re-list"
+            )
         pid = int(self.next_purchase_id)
         self.next_purchase_id = u256(pid + 1)
         self.purchases[u256(pid)] = Purchase(
@@ -449,6 +562,7 @@ class AIMarketplace(gl.Contract):
             skill_id=u256(int(skill_id)),
             buyer=buyer,
             price=u256(value),
+            content_hash=s.content_hash,
             status=ESCROWED,
             dispute_id=u256(0),
             purchased_at=u256(self._now()),
@@ -485,6 +599,8 @@ class AIMarketplace(gl.Contract):
             purchase_id=u256(int(purchase_id)),
             buyer=sender,
             reason=reason,
+            buyer_evidence="",
+            creator_evidence="",
             status=OPEN,
             outcome="",
             refund_pct=u8(0),
@@ -516,6 +632,43 @@ class AIMarketplace(gl.Contract):
         if self._now() < int(d.last_judged_at) + DISPUTE_COOLDOWN_SECONDS:
             raise gl.vm.UserError("adjudication was just attempted — wait before retrying")
         self._run_adjudication(int(dispute_id))
+
+    @gl.public.write
+    def submit_dispute_evidence(self, dispute_id: u256, evidence: str) -> None:
+        """Attach authenticated evidence to an open dispute.
+
+        Only the buyer or the skill's creator may submit, and each party
+        submits exactly once per dispute. Authentication is the signed
+        transaction itself: the evidence is stored on-chain attributed to the
+        submitting party's wallet, so validators can weigh it knowing exactly
+        who claimed it (execution logs, error messages, receipts, ...).
+        """
+        d = self._dispute_or_revert(int(dispute_id))
+        if d.status != OPEN:
+            raise gl.vm.UserError("only an open dispute accepts evidence")
+        p = self._purchase_or_revert(int(d.purchase_id))
+        s = self._skill_or_revert(int(p.skill_id))
+        sender = gl.message.sender_address
+        if sender == d.buyer:
+            if d.buyer_evidence:
+                raise gl.vm.UserError("buyer evidence already submitted")
+            slot = "buyer"
+        elif sender == s.creator:
+            if d.creator_evidence:
+                raise gl.vm.UserError("creator evidence already submitted")
+            slot = "creator"
+        else:
+            raise gl.vm.UserError(
+                "only the buyer or the skill's creator can submit evidence"
+            )
+        evidence = _strip_control_chars(evidence).strip()
+        if not (MIN_EVIDENCE_CHARS <= len(evidence) <= MAX_EVIDENCE_CHARS):
+            raise gl.vm.UserError("evidence must be 20-3000 characters")
+        if slot == "buyer":
+            d.buyer_evidence = evidence
+        else:
+            d.creator_evidence = evidence
+        EvidenceSubmitted(u256(int(dispute_id)), party=slot).emit()
 
     @gl.public.write
     def withdraw_dispute(self, dispute_id: u256) -> None:
@@ -735,6 +888,16 @@ contain an "error" key."""
             return
         s.review_summary = reason
         if verdict == "APPROVE":
+            # Pin the exact content that was approved. A skill may only go
+            # ACTIVE with an immutable content version committed on-chain, so
+            # every later purchase and dispute references the same version.
+            # If the content cannot be committed, fail closed: the listing
+            # stays PENDING_REVIEW rather than going live unverifiable.
+            committed = self._commit_content_version(s.content_url)
+            if committed is None:
+                ModerationFailed(u256(skill_id)).emit()
+                return
+            s.content_snapshot, s.content_hash = committed
             s.status = ACTIVE
             s.score = u8(score)
         else:
@@ -758,14 +921,17 @@ contain an "error" key."""
         title = _neutralize_markers(s.title)
         description = _neutralize_markers(s.description)
         reason = _neutralize_markers(d.reason)
+        buyer_evidence = _neutralize_markers(d.buyer_evidence)
+        creator_evidence = _neutralize_markers(d.creator_evidence)
+        # Adjudicate the EXACT artifact that was approved and purchased: the
+        # immutable content version committed at moderation, never a live
+        # re-fetch of the creator-controlled URL (which the creator could have
+        # changed after the sale).
+        content = s.content_snapshot or "(no committed content version)"
+        content_hash = s.content_hash
+        content_hash_short = content_hash[:8] if content_hash else "unknown"
 
         def do_adjudicate() -> str:
-            try:
-                content = gl.nondet.web.render(s.content_url, mode="text")
-                content = content[:MAX_CONTENT_CHARS]
-            except Exception:
-                content = "(could not fetch — not readable as text)"
-            content = _neutralize_markers(content)
             prompt = f"""You are the neutral dispute arbitrator for an on-chain AI skill
 marketplace. A buyer bought a skill and claims it does not do what the listing
 promised. Decide what percentage of the purchase price (if any) should be
@@ -788,18 +954,37 @@ THE BUYER'S COMPLAINT:
 <<<REASON>>>
 {reason}
 <<<END REASON>>>
-HOSTED SKILL CONTENT (the actual deliverable):
+THE DELIVERABLE (immutable content version #{content_hash_short} — committed
+on-chain by consensus at approval; this is the exact artifact the buyer
+purchased and it cannot be changed by either party):
 <<<CONTENT>>>
 {content}
 <<<END CONTENT>>>
+THE BUYER'S ON-CHAIN EVIDENCE (submitted by the buyer's wallet):
+<<<BUYER_EVIDENCE>>>
+{buyer_evidence}
+<<<END BUYER EVIDENCE>>>
+THE CREATOR'S ON-CHAIN EVIDENCE (submitted by the creator's wallet):
+<<<CREATOR_EVIDENCE>>>
+{creator_evidence}
+<<<END CREATOR EVIDENCE>>>
 ARBITRATION RULES:
-1. Refund only when the content materially fails to deliver what the listing
-   promises. A buyer who simply changed their mind is not entitled to a refund.
+1. Refund only when the deliverable materially fails to deliver what the
+   listing promises. A buyer who simply changed their mind is not entitled to
+   a refund.
 2. refund_pct: 0 if the skill works as described; 100 if it is entirely
    broken, empty, or nothing like the listing; a value in between for partial
    failure (e.g. a feature the listing prominently promised is missing).
-3. Prefer the listing's own words: judge the content against what the listing
-   actually promised, not against a higher standard the buyer invents.
+3. Prefer the listing's own words: judge the deliverable against what the
+   listing actually promised, not against a higher standard the buyer invents.
+4. Weigh the on-chain evidence each party submitted (execution logs, error
+   messages, receipts, descriptions of screenshots). Evidence is attributed
+   to the wallet that submitted it. Absence of evidence is neutral — never
+   penalize a party merely for not submitting.
+5. Judge the immutable content version committed at approval. If the buyer
+   claims the content they received differs from that version, consider the
+   claim only against the evidence submitted; the committed version itself is
+   what this marketplace sold and neither party can alter it.
 Respond with STRICT JSON only — no prose, no markdown fences, exactly:
 {{"refund_pct": integer 0-100, "reason": "one to three sentences"}}"""
             try:
@@ -953,6 +1138,8 @@ are equivalent only if both contain an "error" key."""
             "category": s.category,
             "price": int(s.price),
             "content_url": s.content_url,
+            "content_snapshot": s.content_snapshot,
+            "content_hash": s.content_hash,
             "status": s.status,
             "score": int(s.score),
             "review_summary": s.review_summary,
@@ -971,6 +1158,7 @@ are equivalent only if both contain an "error" key."""
             "skill_id": int(p.skill_id),
             "buyer": p.buyer.as_hex,
             "price": int(p.price),
+            "content_hash": p.content_hash,
             "status": p.status,
             "dispute_id": int(p.dispute_id),
             "purchased_at": int(p.purchased_at),
@@ -983,6 +1171,8 @@ are equivalent only if both contain an "error" key."""
             "purchase_id": int(d.purchase_id),
             "buyer": d.buyer.as_hex,
             "reason": d.reason,
+            "buyer_evidence": d.buyer_evidence,
+            "creator_evidence": d.creator_evidence,
             "status": d.status,
             "outcome": d.outcome,
             "refund_pct": int(d.refund_pct),

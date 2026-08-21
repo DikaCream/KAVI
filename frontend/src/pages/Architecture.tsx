@@ -98,8 +98,14 @@ const MODERATION = [
   {
     no: "05",
     icon: "settle",
-    title: "Settle",
-    body: "The accepted verdict is written on-chain: APPROVE → ACTIVE with a score, REJECT → REJECTED with the reason.",
+    title: "Commit",
+    body: "On APPROVE, a second consensus round pins the immutable content version: the exact text validators read plus its Keccak-256 hash, agreed byte-for-byte.",
+  },
+  {
+    no: "06",
+    icon: "card",
+    title: "Activate",
+    body: "The listing goes ACTIVE with its score only if that version was committed; REJECT stays REJECTED with the reason.",
   },
 ];
 
@@ -108,7 +114,7 @@ const ESCROW = [
     no: "01",
     icon: "card",
     title: "Buy",
-    body: "Buyer sends the exact price; funds are locked in per-purchase escrow.",
+    body: "Buyer sends the exact price. The contract re-fetches the URL under consensus and only escrows if it still matches the approved content version.",
   },
   {
     no: "02",
@@ -125,11 +131,17 @@ const ESCROW = [
   {
     no: "04",
     icon: "compare",
-    title: "Adjudicate",
-    body: "Validators compare the listing vs content vs complaint and rule a refund percentage.",
+    title: "Evidence",
+    body: "Both parties attach authenticated on-chain evidence (execution logs, errors, receipts), each bound to their own wallet.",
   },
   {
     no: "05",
+    icon: "judge",
+    title: "Adjudicate",
+    body: "Validators judge the committed content version plus both parties' evidence — never a live re-fetch of the creator-controlled URL.",
+  },
+  {
+    no: "06",
     icon: "card",
     title: "Settle",
     body: "settle_dispute pays FULL/PARTIAL refund to the buyer or the remainder to the creator.",
@@ -238,6 +250,22 @@ export default function Architecture() {
           <div className="rule">
             both refunds zero, or both non-zero
             <br />+ refund_pct in the same bucket of ten
+          </div>
+        </div>
+        <div className="eq-card">
+          <h3>
+            <span className="step-icon" style={{ width: 30, height: 30 }}>
+              <Icon name="card" size={16} />
+            </span>
+            Content version
+          </h3>
+          <p className="muted" style={{ margin: 0 }}>
+            The immutable content version is committed under a stricter rule:
+            validators must compute the exact same Keccak-256 hash.
+          </p>
+          <div className="rule">
+            content_hash matches byte-for-byte
+            <br />+ snapshot text stored on-chain
           </div>
         </div>
       </div>
