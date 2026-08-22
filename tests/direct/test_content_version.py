@@ -29,6 +29,9 @@ CREATOR_EVIDENCE = (
     "Our test suite runs the exact same skill successfully with the same "
     "inputs; logs attached show a complete run with the expected JSON output."
 )
+BUYER_EVIDENCE_HASH = "a" * 64
+CREATOR_EVIDENCE_HASH = "b" * 64
+
 
 
 def test_content_version_committed_at_moderation(
@@ -104,11 +107,15 @@ def test_dispute_adjudicates_committed_version(
     pid = purchase(contract, direct_vm, direct_bob, sid, price=100)
 
     direct_vm.sender = direct_bob
+    # Filing only opens the evidence window; no LLM is called yet.
+    did = int(contract.file_dispute(pid, REASON))
+    assert contract.get_dispute(did)["status"] == "OPEN"
+    set_time("2030-01-02T00:00:00Z")
     # No web mock: adjudication must NOT fetch the URL. Only the LLM is mocked.
     direct_vm.mock_llm(
         r".*arbitrator.*", json.dumps({"refund_pct": 0, "reason": "works"})
     )
-    did = int(contract.file_dispute(pid, REASON))
+    contract.finalize_dispute(did)
     d = contract.get_dispute(did)
     assert d["status"] == "RESOLVED"
     assert d["outcome"] == "NO_REFUND"
@@ -121,38 +128,48 @@ def test_buyer_and_creator_submit_evidence(
     sid = submit_approved_skill(contract, direct_vm, direct_alice, price=100)
     pid = purchase(contract, direct_vm, direct_bob, sid, price=100)
 
-    # Leave the dispute OPEN (unparseable verdict) so evidence can be added.
+    # Filing leaves the dispute OPEN so both parties can submit evidence.
     direct_vm.sender = direct_bob
-    direct_vm.mock_llm(r".*arbitrator.*", "not json")
     did = int(contract.file_dispute(pid, REASON))
-    direct_vm.clear_mocks()
     assert contract.get_dispute(did)["status"] == "OPEN"
 
-    # Buyer submits first.
+    # Buyer submits a structured record first.
     direct_vm.sender = direct_bob
-    contract.submit_dispute_evidence(did, EVIDENCE)
+    contract.submit_dispute_evidence(
+        did, "EXECUTION_LOG", BUYER_EVIDENCE_HASH,
+        "onchain://purchase/1/run/1", EVIDENCE
+    )
     d = contract.get_dispute(did)
     assert d["buyer_evidence"] == EVIDENCE
-    assert d["creator_evidence"] == ""
+    assert d["buyer_evidence_kind"] == "EXECUTION_LOG"
+    assert d["buyer_evidence_hash"] == BUYER_EVIDENCE_HASH
+    assert d["creator_evidence_hash"] == ""
 
-    # Creator submits their side.
+    # Creator submits their structured side. Both submissions are authenticated
+    # by their distinct wallet senders.
     direct_vm.sender = direct_alice
-    contract.submit_dispute_evidence(did, CREATOR_EVIDENCE)
+    contract.submit_dispute_evidence(
+        did, "TRANSACTION_RECEIPT", CREATOR_EVIDENCE_HASH,
+        "onchain://purchase/1/receipt", CREATOR_EVIDENCE
+    )
     d = contract.get_dispute(did)
     assert d["creator_evidence"] == CREATOR_EVIDENCE
+    assert d["creator_evidence_kind"] == "TRANSACTION_RECEIPT"
 
     # Each party submits exactly once.
     with direct_vm.expect_revert("already submitted"):
-        contract.submit_dispute_evidence(did, EVIDENCE)
+        contract.submit_dispute_evidence(
+            did, "EXECUTION_LOG", BUYER_EVIDENCE_HASH,
+            "onchain://purchase/1/run/1", EVIDENCE
+        )
 
-    # Evidence flows into adjudication: a later retry resolves normally.
-    set_time("2030-01-01T00:10:00Z")
+    # Both sides have submitted, so finalization is now available immediately.
     direct_vm.sender = direct_bob
     direct_vm.mock_llm(
         r".*arbitrator.*",
         json.dumps({"refund_pct": 100, "reason": "broken as buyer claims"}),
     )
-    contract.retry_dispute(did)
+    contract.finalize_dispute(did)
     d = contract.get_dispute(did)
     assert d["status"] == "RESOLVED"
     assert d["outcome"] == "FULL_REFUND"
@@ -168,13 +185,14 @@ def test_evidence_only_buyer_or_creator(
     pid = purchase(contract, direct_vm, direct_bob, sid, price=100)
 
     direct_vm.sender = direct_bob
-    direct_vm.mock_llm(r".*arbitrator.*", "not json")
     did = int(contract.file_dispute(pid, REASON))
-    direct_vm.clear_mocks()
 
     direct_vm.sender = direct_charlie
     with direct_vm.expect_revert("only the buyer or the skill's creator"):
-        contract.submit_dispute_evidence(did, EVIDENCE)
+        contract.submit_dispute_evidence(
+            did, "EXECUTION_LOG", BUYER_EVIDENCE_HASH,
+            "onchain://purchase/1/run/1", EVIDENCE
+        )
 
 
 def test_evidence_validation(
@@ -185,13 +203,21 @@ def test_evidence_validation(
     pid = purchase(contract, direct_vm, direct_bob, sid, price=100)
 
     direct_vm.sender = direct_bob
-    direct_vm.mock_llm(r".*arbitrator.*", "not json")
     did = int(contract.file_dispute(pid, REASON))
-    direct_vm.clear_mocks()
 
     direct_vm.sender = direct_bob
-    with direct_vm.expect_revert("evidence must be 20-3000 characters"):
-        contract.submit_dispute_evidence(did, "too short")
+    with direct_vm.expect_revert("evidence kind must be"):
+        contract.submit_dispute_evidence(
+            did, "NOT_A_KIND", "a" * 64, "onchain://bad", "Valid details that are long enough."
+        )
+    with direct_vm.expect_revert("evidence hash must be"):
+        contract.submit_dispute_evidence(
+            did, "ERROR_REPORT", "too-short", "onchain://bad", EVIDENCE
+        )
+    with direct_vm.expect_revert("evidence details must be 20-3000 characters"):
+        contract.submit_dispute_evidence(
+            did, "ERROR_REPORT", "a" * 64, "onchain://bad", "too short"
+        )
 
 
 def test_evidence_rejected_after_resolution(
@@ -202,11 +228,16 @@ def test_evidence_rejected_after_resolution(
     pid = purchase(contract, direct_vm, direct_bob, sid, price=100)
 
     direct_vm.sender = direct_bob
+    did = int(contract.file_dispute(pid, REASON))
+    set_time("2030-01-02T00:00:00Z")
     direct_vm.mock_llm(
         r".*arbitrator.*", json.dumps({"refund_pct": 0, "reason": "works"})
     )
-    did = int(contract.file_dispute(pid, REASON))
+    contract.finalize_dispute(did)
     assert contract.get_dispute(did)["status"] == "RESOLVED"
 
     with direct_vm.expect_revert("only an open dispute accepts evidence"):
-        contract.submit_dispute_evidence(did, EVIDENCE)
+        contract.submit_dispute_evidence(
+            did, "EXECUTION_LOG", BUYER_EVIDENCE_HASH,
+            "onchain://purchase/1/run/1", EVIDENCE
+        )

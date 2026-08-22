@@ -975,6 +975,79 @@ code,
   background: rgba(251, 113, 133, 0.05);
 }
 
+.evidence-box {
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  border-radius: 12px;
+  padding: 14px;
+  background: rgba(34, 211, 238, 0.04);
+}
+
+.evidence-fields {
+  display: grid;
+  gap: 10px;
+}
+
+.evidence-fields label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.evidence-fields input,
+.evidence-fields textarea,
+.evidence-fields select {
+  background: rgba(13, 5, 19, 0.65);
+  font-size: 0.86rem;
+}
+
+.evidence-record {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.82rem;
+}
+
+.evidence-record.mine {
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.evidence-record span,
+.evidence-record small {
+  color: var(--muted);
+}
+
+.evidence-record code {
+  width: fit-content;
+  color: var(--accent);
+}
+
+.evidence-record p {
+  margin: 5px 0 0;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.evidence-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.evidence-footer p {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
 /* ---------------------------------------------------------------- architecture */
 .flow {
   list-style: none;

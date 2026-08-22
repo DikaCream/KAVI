@@ -126,25 +126,25 @@ const ESCROW = [
     no: "03",
     icon: "dispute",
     title: "Dispute",
-    body: "Within the window, the buyer can open a dispute with a written complaint.",
+    body: "Within the escrow window, the buyer opens a dispute with a written complaint. This starts a separate 24-hour evidence window.",
   },
   {
     no: "04",
     icon: "compare",
     title: "Evidence",
-    body: "Both parties attach authenticated on-chain evidence (execution logs, errors, receipts), each bound to their own wallet.",
+    body: "Before validator review, buyer and creator may each submit one structured record: fixed type, artifact hash, reference, and details. The signed transaction authenticates its author.",
   },
   {
     no: "05",
     icon: "judge",
     title: "Adjudicate",
-    body: "Validators judge the committed content version plus both parties' evidence — never a live re-fetch of the creator-controlled URL.",
+    body: "After both submissions or the 24-hour evidence deadline, anyone can start validator review. Failed reviews remain OPEN and can be retried.",
   },
   {
     no: "06",
     icon: "card",
     title: "Settle",
-    body: "settle_dispute pays FULL/PARTIAL refund to the buyer or the remainder to the creator.",
+    body: "Validators judge the committed content version and authenticated evidence, then settle_dispute pays a FULL/PARTIAL refund or the creator.",
   },
 ];
 

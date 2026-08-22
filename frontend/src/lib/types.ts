@@ -51,13 +51,20 @@ export interface Dispute {
   purchase_id: number;
   buyer: string;
   reason: string;
-  buyer_evidence: string; // on-chain evidence submitted by the buyer
-  creator_evidence: string; // on-chain evidence submitted by the creator
+  buyer_evidence: string; // authenticated evidence details submitted by the buyer
+  creator_evidence: string; // authenticated evidence details submitted by the creator
+  buyer_evidence_kind: string;
+  creator_evidence_kind: string;
+  buyer_evidence_hash: string;
+  creator_evidence_hash: string;
+  buyer_evidence_reference: string;
+  creator_evidence_reference: string;
   status: DisputeStatus;
   outcome: DisputeOutcome;
   refund_pct: number;
   verdict_reason: string;
   filed_at: number;
+  evidence_deadline: number;
   attempts: number;
   last_judged_at: number;
   stale_at: number;
@@ -70,6 +77,7 @@ export interface Config {
   escrow_locked: bigint; // wei
   escrow_window_seconds: number;
   dispute_stale_seconds: number;
+  dispute_evidence_window_seconds: number;
 }
 
 export function toInt(v: unknown): number {

@@ -68,11 +68,18 @@ function toDispute(v: any): Dispute {
     reason: String(o.reason ?? ""),
     buyer_evidence: String(o.buyer_evidence ?? ""),
     creator_evidence: String(o.creator_evidence ?? ""),
+    buyer_evidence_kind: String(o.buyer_evidence_kind ?? ""),
+    creator_evidence_kind: String(o.creator_evidence_kind ?? ""),
+    buyer_evidence_hash: String(o.buyer_evidence_hash ?? ""),
+    creator_evidence_hash: String(o.creator_evidence_hash ?? ""),
+    buyer_evidence_reference: String(o.buyer_evidence_reference ?? ""),
+    creator_evidence_reference: String(o.creator_evidence_reference ?? ""),
     status: String(o.status) as Dispute["status"],
     outcome: String(o.outcome ?? "") as Dispute["outcome"],
     refund_pct: toInt(o.refund_pct),
     verdict_reason: String(o.verdict_reason ?? ""),
     filed_at: toInt(o.filed_at),
+    evidence_deadline: toInt(o.evidence_deadline),
     attempts: toInt(o.attempts),
     last_judged_at: toInt(o.last_judged_at),
     stale_at: toInt(o.stale_at),
@@ -88,6 +95,7 @@ function toConfig(v: any): Config {
     escrow_locked: toBigInt(o.escrow_locked),
     escrow_window_seconds: toInt(o.escrow_window_seconds),
     dispute_stale_seconds: toInt(o.dispute_stale_seconds),
+    dispute_evidence_window_seconds: toInt(o.dispute_evidence_window_seconds),
   };
 }
 
@@ -213,8 +221,24 @@ export class Marketplace {
     return this.write("withdraw_dispute", [disputeId]);
   }
 
-  async submitDisputeEvidence(disputeId: number, evidence: string) {
-    return this.write("submit_dispute_evidence", [disputeId, evidence]);
+  async submitDisputeEvidence(
+    disputeId: number,
+    evidenceKind: string,
+    evidenceHash: string,
+    evidenceReference: string,
+    evidenceDetails: string,
+  ) {
+    return this.write("submit_dispute_evidence", [
+      disputeId,
+      evidenceKind,
+      evidenceHash,
+      evidenceReference,
+      evidenceDetails,
+    ]);
+  }
+
+  async finalizeDispute(disputeId: number) {
+    return this.write("finalize_dispute", [disputeId]);
   }
 
   async settleDispute(disputeId: number) {
