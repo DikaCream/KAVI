@@ -61,6 +61,7 @@ export default function ListSkill() {
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
 
   const fieldValue = (key: keyof Errors): string => {
@@ -123,6 +124,7 @@ export default function ListSkill() {
     e.preventDefault();
     setError(null);
     setNotice(null);
+    setHasSubmitted(true);
     const next = validate();
     setErrors(next);
     const keys = Object.keys(next) as (keyof Errors)[];
@@ -162,6 +164,7 @@ export default function ListSkill() {
       setPrice("");
       setContentUrl("");
       setErrors({});
+      setHasSubmitted(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Submission failed.");
     } finally {
@@ -192,7 +195,7 @@ export default function ListSkill() {
 
       <div className="grid two-col">
         <form className="panel form" onSubmit={submit} noValidate>
-          {Object.keys(errors).length > 0 && (
+          {hasSubmitted && Object.keys(errors).length > 0 && (
             <div
               className="error-summary"
               role="alert"
