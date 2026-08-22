@@ -9,7 +9,7 @@ Unlike a normal deterministic smart contract, this is an **Intelligent Contract*
 ## Live demo
 
 - **App:** https://kaviai.vercel.app/ (Vite + React frontend, deployed on Vercel)
-- **Contract (StudioNet):** `0x26f5D0AAB364B7606eAB4eD2cb3E4d5A250C41c2` on the [GenLayer Studio explorer](https://explorer-studio.genlayer.com/address/0x26f5D0AAB364B7606eAB4eD2cb3E4d5A250C41c2)
+- **Contract (StudioNet):** `0xf9b3443fDE2E45E3A19bcFE66fDDE996e2b17D7B` on the [GenLayer Studio explorer](https://explorer-studio.genlayer.com/address/0xf9b3443fDE2E45E3A19bcFE66fDDE996e2b17D7B)
 - The catalog is live: 7 approved agent skills (Frontend Design, DOCX generation, Vercel React Best Practices, PPT generation, and more) were submitted on-chain and approved by the AI validators.
 
 ## Features
@@ -90,9 +90,9 @@ genlayer deploy --contract contracts/ai_marketplace.py
 
 Take note of the printed **Contract Address** and set it in the frontend (see below).
 
-**Current dev deployment (StudioNet):** `0x26f5D0AAB364B7606eAB4eD2cb3E4d5A250C41c2`
+**Current dev deployment (StudioNet):** `0xf9b3443fDE2E45E3A19bcFE66fDDE996e2b17D7B`
 
-Verified live: `get_skill_count` returns `0`, and a real `submit_skill` ran full moderation. The validators fetched the content URL and rejected a placeholder page with a written review, proving the fetch → LLM → equivalence pipeline end to end.
+Verified live: `get_skill_count` returns `7`, and all seven listings completed moderation plus immutable content commitment on StudioNet. The deployed dispute schema exposes a separate evidence window, structured authenticated evidence, and `finalize_dispute` before validator adjudication.
 
 ### 5. Run integration tests (real consensus)
 
