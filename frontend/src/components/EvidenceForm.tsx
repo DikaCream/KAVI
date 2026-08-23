@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { keccak256 } from "viem/utils";
 import type { Marketplace } from "../lib/contract";
 import type { Dispute } from "../lib/types";
 
@@ -29,7 +30,6 @@ export default function EvidenceForm({
   onSubmitted: () => void;
 }) {
   const [kind, setKind] = useState("EXECUTION_LOG");
-  const [artifactHash, setArtifactHash] = useState("");
   const [reference, setReference] = useState("");
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -83,7 +83,14 @@ export default function EvidenceForm({
     dispute.attempts > 0 &&
     now >= dispute.last_judged_at + 300 &&
     canFinalize;
-  const hashIsValid = /^[0-9a-fA-F]{64}$/.test(artifactHash.trim().replace(/^0x/, ""));
+  // The contract verifies evidence_hash == Keccak256(details) on-chain, so the
+  // hash is derived from the submitted details rather than typed by hand.
+  const computedHash = useMemo(() => {
+    const d = details.trim();
+    if (d.length < 20 || d.length > 3000) return "";
+    return keccak256(new TextEncoder().encode(d)).slice(2);
+  }, [details]);
+  const hashIsValid = /^[0-9a-f]{64}$/.test(computedHash);
   const formIsValid =
     hashIsValid &&
     reference.trim().length > 0 &&
@@ -115,11 +122,10 @@ export default function EvidenceForm({
       const tx = await contract.submitDisputeEvidence(
         dispute.id,
         kind,
-        artifactHash.trim().replace(/^0x/, ""),
+        computedHash,
         reference.trim(),
         details.trim(),
       );
-      setArtifactHash("");
       setReference("");
       setDetails("");
       return tx;
@@ -166,12 +172,10 @@ export default function EvidenceForm({
             </select>
           </label>
           <label>
-            Artifact hash
+            Artifact hash (computed from details)
             <input
-              value={artifactHash}
-              onChange={(e) => setArtifactHash(e.target.value)}
-              placeholder="64 hexadecimal characters"
-              inputMode="text"
+              value={computedHash || "Paste details to compute…"}
+              disabled
               aria-label={`${role} evidence artifact hash`}
             />
           </label>
@@ -189,7 +193,7 @@ export default function EvidenceForm({
             <textarea
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              placeholder="Describe the execution, exact error, or receipt represented by the artifact (20 to 3000 characters)."
+              placeholder="Paste the raw artifact bytes — the execution log, error output, or transaction receipt — that prove your claim (20 to 3000 characters). The hash above is Keccak-256 of this text and is verified on-chain."
               rows={4}
               aria-label={`${role} evidence details`}
             />
