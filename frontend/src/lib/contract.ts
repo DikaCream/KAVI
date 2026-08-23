@@ -4,6 +4,7 @@ import {
   Dispute,
   Purchase,
   Skill,
+  SkillContent,
   toBigInt,
   toInt,
 } from "./types";
@@ -29,7 +30,7 @@ function toSkill(v: any): Skill {
     category: String(o.category ?? ""),
     price: toBigInt(o.price),
     content_url: String(o.content_url ?? ""),
-    content_snapshot: String(o.content_snapshot ?? ""),
+    // content_snapshot intentionally omitted from public view
     content_hash: String(o.content_hash ?? ""),
     status: String(o.status) as Skill["status"],
     score: toInt(o.score),
@@ -162,6 +163,17 @@ export class Marketplace {
 
   async getSkillCount(): Promise<number> {
     return toInt(await this.read("get_skill_count"));
+  }
+
+  async getSkillContent(id: number): Promise<SkillContent | null> {
+    const v = await this.read("get_skill_content", [id]);
+    if (v == null) return null;
+    const o = fromMapLike(v);
+    return {
+      content_snapshot: String(o.content_snapshot ?? ""),
+      content_hash: String(o.content_hash ?? ""),
+      reason: o.reason ? String(o.reason) : undefined,
+    };
   }
 
   async listSkills(offset = 0, limit = 50): Promise<Skill[]> {

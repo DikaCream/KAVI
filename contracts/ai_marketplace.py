@@ -741,6 +741,14 @@ class AIMarketplace(gl.Contract):
             raise gl.vm.UserError("evidence reference must not contain whitespace")
         if not (MIN_EVIDENCE_CHARS <= len(evidence_details) <= MAX_EVIDENCE_CHARS):
             raise gl.vm.UserError("evidence details must be 20-3000 characters")
+        # Verify the hash is a real cryptographic commitment: the caller must
+        # submit details whose Keccak-256 digest matches the claimed hash.
+        # This binds the on-chain record to verifiable bytes so validators
+        # know the evidence hash is not an unverified claim.
+        computed = Keccak256()
+        computed.update(evidence_details.encode("utf-8"))
+        if computed.hexdigest() != evidence_hash:
+            raise gl.vm.UserError("evidence hash does not match evidence details")
         if slot == "buyer":
             d.buyer_evidence = evidence_details
             d.buyer_evidence_kind = evidence_kind
@@ -1051,14 +1059,18 @@ purchased and it cannot be changed by either party):
 <<<CONTENT>>>
 {content}
 <<<END CONTENT>>>
-THE BUYER'S AUTHENTICATED EVIDENCE (submitted by the buyer's wallet):
+THE BUYER'S AUTHENTICATED EVIDENCE (submitted by the buyer's wallet; the
+artifact hash was verified on-chain to match the evidence details via
+Keccak-256):
 KIND: {buyer_evidence_kind}
 ARTIFACT HASH: {buyer_evidence_hash}
 REFERENCE: {buyer_evidence_reference}
 <<<BUYER_EVIDENCE_DETAILS>>>
 {buyer_evidence or "No evidence submitted"}
 <<<END BUYER EVIDENCE DETAILS>>>
-THE CREATOR'S AUTHENTICATED EVIDENCE (submitted by the creator's wallet):
+THE CREATOR'S AUTHENTICATED EVIDENCE (submitted by the creator's wallet; the
+artifact hash was verified on-chain to match the evidence details via
+Keccak-256):
 KIND: {creator_evidence_kind}
 ARTIFACT HASH: {creator_evidence_hash}
 REFERENCE: {creator_evidence_reference}
@@ -1155,6 +1167,28 @@ are equivalent only if both contain an "error" key."""
         return self._skill_dict(s)
 
     @gl.public.view
+    def get_skill_content(self, skill_id: u256) -> typing.Any:
+        """Skill content is only accessible after purchase (or by its creator).
+
+        The full immutable content snapshot is not a public field. This view
+        returns the snapshot and hash to the creator and any address that has
+        purchased the skill, and an access-denied message to everyone else.
+        """
+        s = self.skills.get(u256(int(skill_id)))
+        if s is None:
+            return None
+        sender = gl.message.sender_address
+        if s.creator == sender:
+            return {"content_snapshot": s.content_snapshot, "content_hash": s.content_hash}
+        buyer_ids = self.buyer_purchases.get(sender)
+        if buyer_ids is not None:
+            for pid in buyer_ids:
+                p = self.purchases.get(pid)
+                if p is not None and int(p.skill_id) == int(skill_id):
+                    return {"content_snapshot": s.content_snapshot, "content_hash": s.content_hash}
+        return {"content_snapshot": "", "content_hash": "", "reason": "purchase required"}
+
+    @gl.public.view
     def get_purchase(self, purchase_id: u256) -> typing.Any:
         p = self.purchases.get(u256(int(purchase_id)))
         if p is None:
@@ -1229,6 +1263,10 @@ are equivalent only if both contain an "error" key."""
         return out
 
     def _skill_dict(self, s: Skill) -> dict[str, typing.Any]:
+        # content_snapshot intentionally excluded from the public view.
+        # The full immutable content version is only accessible to the
+        # creator and to buyers who have already purchased, via the
+        # dedicated get_skill_content endpoint.
         return {
             "id": int(s.id),
             "creator": s.creator.as_hex,
@@ -1237,7 +1275,6 @@ are equivalent only if both contain an "error" key."""
             "category": s.category,
             "price": int(s.price),
             "content_url": s.content_url,
-            "content_snapshot": s.content_snapshot,
             "content_hash": s.content_hash,
             "status": s.status,
             "score": int(s.score),

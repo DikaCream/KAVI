@@ -20,7 +20,9 @@ export interface Skill {
   category: string;
   price: bigint; // wei
   content_url: string;
-  content_snapshot: string; // immutable text pinned by validators at approval
+  // content_snapshot intentionally NOT in the public Skill view.
+  // Paid content is gated behind getSkillContent (accessible only
+  // to the creator and verified purchasers).
   content_hash: string; // keccak-256 hex of content_snapshot
   status: SkillStatus;
   score: number;
@@ -32,6 +34,12 @@ export interface Skill {
   revenue: bigint; // wei
   disputes: number;
   refunds: number;
+}
+
+export interface SkillContent {
+  content_snapshot: string;
+  content_hash: string;
+  reason?: string; // "purchase required" when denied
 }
 
 export interface Purchase {

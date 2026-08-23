@@ -22,6 +22,8 @@ Unlike a normal deterministic smart contract, this is an **Intelligent Contract*
 | **Verified purchases** | Before escrowing, `purchase_skill` re-fetches the URL under consensus and requires the hash to still match the approved version, so buyers receive exactly the artifact that was approved. |
 | **Escrow purchases** | Buyers pay the exact price; funds are held per-purchase until released or a dispute resolves. |
 | **Dispute adjudication** | Validators judge the committed content version plus authenticated on-chain evidence from both parties (never a live re-fetch of the creator-controlled URL), then rule `NO_REFUND` / `PARTIAL_REFUND` / `FULL_REFUND`. |
+| **Evidence hash verification** | Every evidence submission proves its hash matches Keccak-256(details) on-chain, binding each record to verifiable bytes that validators know are not an unverified claim. |
+| **Content gated until purchase** | The immutable content snapshot is never returned in public skill views. Only the creator and verified purchasers can read the full content via `get_skill_content`. |
 
 Every non-deterministic step (moderation and adjudication) runs under an explicit [`prompt_comparative`](https://docs.genlayer.com) equivalence principle, so honest validators that read the same content but phrase their verdict differently still reach consensus.
 
