@@ -78,7 +78,7 @@ def test_submit_and_moderate_reaches_consensus():
     # when validators can read the content and parse the JSON verdict).
     assert skill["status"] in TERMINAL_STATUSES
     assert skill["title"] == SKILL_TITLE
-    assert skill["content_url"] == SKILL_URL
+    assert "content_url" not in skill
     assert skill["moderation_attempts"] >= 1
     # A terminal verdict carries a review summary and a sane 0-100 score.
     assert isinstance(skill["review_summary"], str) and skill["review_summary"]

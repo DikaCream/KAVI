@@ -17,8 +17,16 @@ function env(name: string, fallback: string): string {
 
 export const CONTRACT_ADDRESS = env(
   "VITE_CONTRACT_ADDRESS",
-  "0xf9b3443fDE2E45E3A19bcFE66fDDE996e2b17D7B",
+  "0x06ff588FA96c71A050CCBd789Ed5f6643684Ff97",
 );
+
+// Public catalog: keep only the four vetted v3 listings visible. Rejected,
+// duplicate, and experimental on-chain entries remain out of the app.
+export const PUBLIC_SKILL_IDS = new Set([1, 2, 3, 4]);
+
+export function isPublicSkill(skill: { id: number; status: string }): boolean {
+  return skill.status === "ACTIVE" && PUBLIC_SKILL_IDS.has(skill.id);
+}
 
 export const NETWORK = env("VITE_GENLAYER_NETWORK", "studionet");
 

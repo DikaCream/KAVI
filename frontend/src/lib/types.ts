@@ -19,7 +19,9 @@ export interface Skill {
   description: string;
   category: string;
   price: bigint; // wei
-  content_url: string;
+  // content_url intentionally NOT in the public Skill view.
+  // Validators use the creator URL internally; buyers access content only
+  // after purchase through the gated contract view.
   // content_snapshot intentionally NOT in the public Skill view.
   // Paid content is gated behind getSkillContent (accessible only
   // to the creator and verified purchasers).

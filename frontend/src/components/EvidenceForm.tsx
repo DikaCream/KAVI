@@ -30,7 +30,6 @@ export default function EvidenceForm({
   onSubmitted: () => void;
 }) {
   const [kind, setKind] = useState("EXECUTION_LOG");
-  const [reference, setReference] = useState("");
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,8 +92,6 @@ export default function EvidenceForm({
   const hashIsValid = /^[0-9a-f]{64}$/.test(computedHash);
   const formIsValid =
     hashIsValid &&
-    reference.trim().length > 0 &&
-    reference.trim().length <= 500 &&
     details.trim().length >= 20 &&
     details.trim().length <= 3000;
 
@@ -123,10 +120,9 @@ export default function EvidenceForm({
         dispute.id,
         kind,
         computedHash,
-        reference.trim(),
+        `onchain://evidence/${computedHash}`,
         details.trim(),
       );
-      setReference("");
       setDetails("");
       return tx;
     });
@@ -180,12 +176,11 @@ export default function EvidenceForm({
             />
           </label>
           <label>
-            Artifact reference
+            Canonical on-chain evidence reference
             <input
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              placeholder="https://… or onchain://purchase/…"
-              aria-label={`${role} evidence artifact reference`}
+              value={computedHash ? `onchain://evidence/${computedHash}` : ""}
+              readOnly
+              aria-label={`${role} canonical evidence reference`}
             />
           </label>
           <label>

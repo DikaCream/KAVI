@@ -5,6 +5,7 @@ import StatusBadge from "../components/StatusBadge";
 import { useMarketplace } from "../context/MarketplaceContext";
 import { formatGen } from "../lib/client";
 import type { Dispute, Purchase, Skill } from "../lib/types";
+import { isPublicSkill } from "../config";
 
 interface CreatorDispute {
   skill: Skill;
@@ -32,11 +33,12 @@ export default function Dashboard() {
         contract.listCreatorSkills(wallet.address, 0, 50),
         contract.listBuyerPurchases(wallet.address, 0, 50),
       ]);
-      setSkills(s);
+      const publicSkills = s.filter(isPublicSkill);
+      setSkills(publicSkills);
       setPurchases(p);
       // Disputes on the creator's skills, so creators can submit evidence.
       const rows: CreatorDispute[] = [];
-      for (const sk of s) {
+      for (const sk of publicSkills) {
         if (sk.disputes <= 0) continue;
         const ps = await contract.listSkillPurchases(sk.id, 0, 50);
         for (const pc of ps) {

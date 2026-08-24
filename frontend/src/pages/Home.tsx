@@ -4,6 +4,7 @@ import AnimatedNumber from "../components/AnimatedNumber";
 import OrbField from "../components/OrbField";
 import ScrollReveal from "../components/ScrollReveal";
 import { useMarketplace } from "../context/MarketplaceContext";
+import { isPublicSkill } from "../config";
 
 const REGIONS = [
   {
@@ -113,7 +114,7 @@ export default function Home() {
     contract
       .listSkills(0, 50)
       .then((list) =>
-        alive ? setLiveSkills(list.filter((s) => s.status === "ACTIVE").length) : null,
+        alive ? setLiveSkills(list.filter(isPublicSkill).length) : null,
       )
       .catch(() => {});
     return () => {

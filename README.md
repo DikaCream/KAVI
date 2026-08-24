@@ -9,8 +9,8 @@ Unlike a normal deterministic smart contract, this is an **Intelligent Contract*
 ## Live demo
 
 - **App:** https://kaviai.vercel.app/ (Vite + React frontend, deployed on Vercel)
-- **Contract (StudioNet):** `0xf9b3443fDE2E45E3A19bcFE66fDDE996e2b17D7B` on the [GenLayer Studio explorer](https://explorer-studio.genlayer.com/address/0xf9b3443fDE2E45E3A19bcFE66fDDE996e2b17D7B)
-- The catalog is live: 7 approved agent skills (Frontend Design, DOCX generation, Vercel React Best Practices, PPT generation, and more) were submitted on-chain and approved by the AI validators.
+- **Contract (StudioNet):** `0x06ff588FA96c71A050CCBd789Ed5f6643684Ff97` on the [GenLayer Studio explorer](https://explorer-studio.genlayer.com/address/0x06ff588FA96c71A050CCBd789Ed5f6643684Ff97)
+- The public catalog currently shows four vetted agent skills from the current deployment (IDs 1-4): Unified LLM API gateway, Frontend Design, Word Document (DOCX) Generation, and Vercel React Best Practices. The frontend filters out rejected and experimental submissions while the contract preserves the full on-chain history.
 
 ## Features
 
@@ -22,8 +22,8 @@ Unlike a normal deterministic smart contract, this is an **Intelligent Contract*
 | **Verified purchases** | Before escrowing, `purchase_skill` re-fetches the URL under consensus and requires the hash to still match the approved version, so buyers receive exactly the artifact that was approved. |
 | **Escrow purchases** | Buyers pay the exact price; funds are held per-purchase until released or a dispute resolves. |
 | **Dispute adjudication** | Validators judge the committed content version plus authenticated on-chain evidence from both parties (never a live re-fetch of the creator-controlled URL), then rule `NO_REFUND` / `PARTIAL_REFUND` / `FULL_REFUND`. |
-| **Evidence hash verification** | Every evidence submission proves its hash matches Keccak-256(details) on-chain, binding each record to verifiable bytes that validators know are not an unverified claim. |
-| **Content gated until purchase** | The immutable content snapshot is never returned in public skill views. Only the creator and verified purchasers can read the full content via `get_skill_content`. |
+| **Evidence hash verification** | Evidence details are stored as the canonical on-chain artifact bytes. The contract verifies `Keccak-256(details)` and accepts only the matching `onchain://evidence/<hash>` reference. |
+| **Content gated until purchase** | Public skill views omit both the immutable snapshot and the creator URL. Only the creator and verified purchasers can read the full content via `get_skill_content`. |
 
 Every non-deterministic step (moderation and adjudication) runs under an explicit [`prompt_comparative`](https://docs.genlayer.com) equivalence principle, so honest validators that read the same content but phrase their verdict differently still reach consensus.
 
@@ -92,9 +92,9 @@ genlayer deploy --contract contracts/ai_marketplace.py
 
 Take note of the printed **Contract Address** and set it in the frontend (see below).
 
-**Current dev deployment (StudioNet):** `0xf9b3443fDE2E45E3A19bcFE66fDDE996e2b17D7B`
+**Current deployment (StudioNet):** `0x06ff588FA96c71A050CCBd789Ed5f6643684Ff97`
 
-Verified live: `get_skill_count` returns `7`, and all seven listings completed moderation plus immutable content commitment on StudioNet. The deployed dispute schema exposes a separate evidence window, structured authenticated evidence, and `finalize_dispute` before validator adjudication.
+Verified live: the v3 contract exposes the evidence-gated dispute schema, structured authenticated evidence, and `finalize_dispute` before validator adjudication. The public frontend displays only the four vetted ACTIVE listings selected for the catalog.
 
 ### 5. Run integration tests (real consensus)
 
@@ -123,7 +123,7 @@ Set `VITE_GENLAYER_NETWORK=studionet` (default) or `testnet-asimov`, and `VITE_G
 3. **Commit.** On `APPROVE`, a second consensus round pins the immutable content version: the exact text validators read (`content_snapshot`) plus its Keccak-256 hash (`content_hash`), agreed byte-for-byte under a hash-equality equivalence principle. A skill goes `ACTIVE` only if that version was committed.
 4. **Purchase.** `purchase_skill(skill_id)` is `payable` and requires the exact price. It re-fetches the URL under consensus and only escrows if the hash still matches the committed version; a drifted creator-controlled URL blocks the purchase. The purchase is recorded against that `content_hash`. Funds move into per-purchase escrow and the contract tracks `escrow_locked` so it always equals the sum of open escrows.
 5. **Release or dispute.** Before the 7-day window closes only the buyer may release early; after it anyone may release to the creator. The buyer may instead `file_dispute(purchase_id, reason)` within the window.
-6. **Evidence window.** Filing a dispute only creates an `OPEN` case and a 24-hour evidence deadline; it does not call validators. Before finalization, the buyer and creator can each submit one structured record with a fixed `kind`, 32-byte artifact digest, reference, and details through `submit_dispute_evidence`. The signed transaction authenticates the submitting wallet, and the record is stored on-chain.
+6. **Evidence window.** Filing a dispute only creates an `OPEN` case and a 24-hour evidence deadline; it does not call validators. Before finalization, the buyer and creator can each submit one structured record with a fixed `kind`, a 32-byte digest, and raw artifact details through `submit_dispute_evidence`. The contract stores those bytes in the dispute record, verifies `Keccak256(details)`, and accepts only the canonical `onchain://evidence/<hash>` reference. The signed transaction authenticates the submitting wallet.
 7. **Adjudication.** `finalize_dispute` can start validators only after both parties submit or the evidence deadline expires. Validators judge the committed content version (stored snapshot, never a live re-fetch) plus the complaint and authenticated evidence, returning `{refund_pct, reason}` under an equivalence principle. Failed adjudication remains `OPEN` for a throttled `retry_dispute`; a successful verdict becomes `RESOLVED`.
 8. **Settle.** `settle_dispute` is permissionless and applies the outcome: `FULL_REFUND` / `PARTIAL_REFUND` back to the buyer, or `NO_REFUND` releasing to the creator. An unresolved dispute can be `close_stale_dispute`d after the stale window (fails closed back to the buyer).
 

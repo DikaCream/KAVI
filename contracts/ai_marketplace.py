@@ -222,6 +222,16 @@ def _is_hex_digest(value: str) -> bool:
     )
 
 
+def _canonical_evidence_reference(evidence_hash: str) -> str:
+    """Return the only accepted reference for an on-chain evidence record.
+
+    Evidence details are stored in the dispute record itself. The canonical
+    reference makes that retrievable byte string explicit and prevents callers
+    from attaching an unrelated URL or opaque label to a verified digest.
+    """
+    return "onchain://evidence/" + evidence_hash
+
+
 def _fetch_content_snapshot(url: str):
     """Fetch a URL exactly as validators will read it, and hash it.
 
@@ -741,14 +751,19 @@ class AIMarketplace(gl.Contract):
             raise gl.vm.UserError("evidence reference must not contain whitespace")
         if not (MIN_EVIDENCE_CHARS <= len(evidence_details) <= MAX_EVIDENCE_CHARS):
             raise gl.vm.UserError("evidence details must be 20-3000 characters")
-        # Verify the hash is a real cryptographic commitment: the caller must
-        # submit details whose Keccak-256 digest matches the claimed hash.
-        # This binds the on-chain record to verifiable bytes so validators
-        # know the evidence hash is not an unverified claim.
+        # Evidence details are the canonical retrievable artifact bytes: they
+        # are stored in the dispute record and exposed through get_dispute.
+        # The claimed digest must match those exact bytes, and the reference
+        # must point to that on-chain record rather than an unverifiable URL.
         computed = Keccak256()
         computed.update(evidence_details.encode("utf-8"))
-        if computed.hexdigest() != evidence_hash:
+        computed_hash = computed.hexdigest()
+        if computed_hash != evidence_hash:
             raise gl.vm.UserError("evidence hash does not match evidence details")
+        if evidence_reference != _canonical_evidence_reference(computed_hash):
+            raise gl.vm.UserError(
+                "evidence reference must be the canonical on-chain evidence reference"
+            )
         if slot == "buyer":
             d.buyer_evidence = evidence_details
             d.buyer_evidence_kind = evidence_kind
@@ -1274,7 +1289,8 @@ are equivalent only if both contain an "error" key."""
             "description": s.description,
             "category": s.category,
             "price": int(s.price),
-            "content_url": s.content_url,
+            # The creator URL is intentionally omitted: it is an ingestion
+            # source for validators, not a public download link for paid work.
             "content_hash": s.content_hash,
             "status": s.status,
             "score": int(s.score),

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import StatusBadge from "../components/StatusBadge";
 import { useMarketplace } from "../context/MarketplaceContext";
+import { isPublicSkill } from "../config";
 import { formatGen } from "../lib/client";
 import type { Skill } from "../lib/types";
 
@@ -17,7 +18,7 @@ export default function SkillDetail() {
 
   const refresh = useCallback(async () => {
     const s = await contract.getSkill(skillId);
-    if (s == null) setMissing(true);
+    if (s == null || !isPublicSkill(s)) setMissing(true);
     else setSkill(s);
   }, [contract, skillId]);
 
@@ -28,7 +29,7 @@ export default function SkillDetail() {
   if (missing) {
     return (
       <div className="container page empty">
-        Skill #{skillId} not found.
+        This skill is not available in the public catalog.
       </div>
     );
   }
@@ -114,9 +115,6 @@ export default function SkillDetail() {
             )}
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <a href={skill.content_url} target="_blank" rel="noreferrer">
-              <button className="ghost">View content ↗</button>
-            </a>
             <button
               className="buy"
               onClick={buy}

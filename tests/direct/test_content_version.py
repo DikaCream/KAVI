@@ -143,7 +143,7 @@ def test_buyer_and_creator_submit_evidence(
     direct_vm.sender = direct_bob
     contract.submit_dispute_evidence(
         did, "EXECUTION_LOG", BUYER_EVIDENCE_HASH,
-        "onchain://purchase/1/run/1", EVIDENCE
+        "onchain://evidence/457857aefb0be7989c4135cea5c82adf6d862de05ae5876a6beb090d2e5926b8", EVIDENCE
     )
     d = contract.get_dispute(did)
     assert d["buyer_evidence"] == EVIDENCE
@@ -156,7 +156,7 @@ def test_buyer_and_creator_submit_evidence(
     direct_vm.sender = direct_alice
     contract.submit_dispute_evidence(
         did, "TRANSACTION_RECEIPT", CREATOR_EVIDENCE_HASH,
-        "onchain://purchase/1/receipt", CREATOR_EVIDENCE
+        "onchain://evidence/c71aed2812b389f9c78443a50b2b31d793d180478874606d7e8d1ab6258e905c", CREATOR_EVIDENCE
     )
     d = contract.get_dispute(did)
     assert d["creator_evidence"] == CREATOR_EVIDENCE
@@ -166,7 +166,7 @@ def test_buyer_and_creator_submit_evidence(
     with direct_vm.expect_revert("already submitted"):
         contract.submit_dispute_evidence(
             did, "EXECUTION_LOG", BUYER_EVIDENCE_HASH,
-            "onchain://purchase/1/run/1", EVIDENCE
+            "onchain://evidence/457857aefb0be7989c4135cea5c82adf6d862de05ae5876a6beb090d2e5926b8", EVIDENCE
         )
 
     # Both sides have submitted, so finalization is now available immediately.
@@ -197,7 +197,7 @@ def test_evidence_only_buyer_or_creator(
     with direct_vm.expect_revert("only the buyer or the skill's creator"):
         contract.submit_dispute_evidence(
             did, "EXECUTION_LOG", BUYER_EVIDENCE_HASH,
-            "onchain://purchase/1/run/1", EVIDENCE
+            "onchain://evidence/457857aefb0be7989c4135cea5c82adf6d862de05ae5876a6beb090d2e5926b8", EVIDENCE
         )
 
 
@@ -216,8 +216,27 @@ def test_evidence_hash_must_match_details(
     direct_vm.sender = direct_bob
     with direct_vm.expect_revert("evidence hash does not match evidence details"):
         contract.submit_dispute_evidence(
-            did, "EXECUTION_LOG", "a" * 64, "onchain://bad",
+            did, "EXECUTION_LOG", "a" * 64, "onchain://evidence/457857aefb0be7989c4135cea5c82adf6d862de05ae5876a6beb090d2e5926b8",
             "This text does not hash to aaaa..."
+        )
+
+
+def test_evidence_reference_must_bind_to_onchain_artifact(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    contract = direct_deploy("contracts/ai_marketplace.py")
+    sid = submit_approved_skill(contract, direct_vm, direct_alice, price=100)
+    pid = purchase(contract, direct_vm, direct_bob, sid, price=100)
+    direct_vm.sender = direct_bob
+    did = int(contract.file_dispute(pid, REASON))
+
+    with direct_vm.expect_revert("canonical on-chain evidence reference"):
+        contract.submit_dispute_evidence(
+            did,
+            "EXECUTION_LOG",
+            BUYER_EVIDENCE_HASH,
+            "https://example.com/unrelated-artifact",
+            EVIDENCE,
         )
 
 
@@ -234,15 +253,15 @@ def test_evidence_validation(
     direct_vm.sender = direct_bob
     with direct_vm.expect_revert("evidence kind must be"):
         contract.submit_dispute_evidence(
-            did, "NOT_A_KIND", BUYER_EVIDENCE_HASH, "onchain://bad", EVIDENCE
+            did, "NOT_A_KIND", BUYER_EVIDENCE_HASH, "onchain://evidence/457857aefb0be7989c4135cea5c82adf6d862de05ae5876a6beb090d2e5926b8", EVIDENCE
         )
     with direct_vm.expect_revert("evidence hash must be"):
         contract.submit_dispute_evidence(
-            did, "ERROR_REPORT", "too-short", "onchain://bad", EVIDENCE
+            did, "ERROR_REPORT", "too-short", "onchain://evidence/457857aefb0be7989c4135cea5c82adf6d862de05ae5876a6beb090d2e5926b8", EVIDENCE
         )
     with direct_vm.expect_revert("evidence details must be 20-3000 characters"):
         contract.submit_dispute_evidence(
-            did, "ERROR_REPORT", BUYER_EVIDENCE_HASH, "onchain://bad", "too short"
+            did, "ERROR_REPORT", BUYER_EVIDENCE_HASH, "onchain://evidence/457857aefb0be7989c4135cea5c82adf6d862de05ae5876a6beb090d2e5926b8", "too short"
         )
 
 
@@ -265,7 +284,7 @@ def test_evidence_rejected_after_resolution(
     with direct_vm.expect_revert("only an open dispute accepts evidence"):
         contract.submit_dispute_evidence(
             did, "EXECUTION_LOG", BUYER_EVIDENCE_HASH,
-            "onchain://purchase/1/run/1", EVIDENCE
+            "onchain://evidence/457857aefb0be7989c4135cea5c82adf6d862de05ae5876a6beb090d2e5926b8", EVIDENCE
         )
 
 
@@ -280,6 +299,7 @@ def test_skill_content_gated(
     pub = contract.get_skill(sid)
     assert "content_snapshot" not in pub
     assert pub["content_hash"] != ""
+    assert "content_url" not in pub
 
     # Gated view, non-purchaser: denied.
     direct_vm.sender = direct_charlie

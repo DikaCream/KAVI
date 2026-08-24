@@ -132,7 +132,7 @@ const ESCROW = [
     no: "04",
     icon: "compare",
     title: "Evidence",
-    body: "Before validator review, buyer and creator may each submit one structured record: fixed type, artifact hash, reference, and details. The signed transaction authenticates its author.",
+    body: "Before validator review, buyer and creator may each submit one structured record: fixed type, a Keccak-256 artifact hash, canonical on-chain reference, and raw details stored in the dispute. The signed transaction authenticates its author.",
   },
   {
     no: "05",

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import SkillCard from "../components/SkillCard";
 import { useMarketplace } from "../context/MarketplaceContext";
 import type { Skill } from "../lib/types";
+import { isPublicSkill } from "../config";
 
 export default function Browse() {
   const { contract } = useMarketplace();
@@ -13,7 +14,7 @@ export default function Browse() {
   const refresh = useCallback(async () => {
     try {
       const list = await contract.listSkills(0, 50);
-      setSkills(list.filter((s) => s.status === "ACTIVE"));
+      setSkills(list.filter(isPublicSkill));
     } catch {
       /* leave empty on error */
     } finally {

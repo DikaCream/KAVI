@@ -29,8 +29,8 @@ function toSkill(v: any): Skill {
     description: String(o.description ?? ""),
     category: String(o.category ?? ""),
     price: toBigInt(o.price),
-    content_url: String(o.content_url ?? ""),
-    // content_snapshot intentionally omitted from public view
+    // content_url is intentionally omitted from public contract views.
+    // content_snapshot is also gated and never mapped here.
     content_hash: String(o.content_hash ?? ""),
     status: String(o.status) as Skill["status"],
     score: toInt(o.score),
